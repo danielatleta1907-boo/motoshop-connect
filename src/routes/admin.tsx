@@ -429,10 +429,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /* ============ LEADS ============ */
+type OrderStatus = "pending" | "contacted" | "sold" | "cancelled";
 function LeadsTab() { return <OrdersList filterStatus={["pending", "contacted"]} title="Interessados" allowSell />; }
 function SoldTab() { return <OrdersList filterStatus={["sold"]} title="Vendidos" />; }
 
-function OrdersList({ filterStatus, title, allowSell }: { filterStatus: string[]; title: string; allowSell?: boolean }) {
+function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderStatus[]; title: string; allowSell?: boolean }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [sellOrder, setSellOrder] = useState<any | null>(null);
   const [soldPrice, setSoldPrice] = useState<string>("");
@@ -447,7 +448,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: string[]
   }
   useEffect(() => { load(); }, [filterStatus.join(",")]);
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: OrderStatus) {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Atualizado");
