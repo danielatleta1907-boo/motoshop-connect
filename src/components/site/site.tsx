@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
+import { waNumber } from "@/lib/format";
 import { LogIn, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -51,7 +52,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {s?.whatsapp && (
             <a
-              href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`}
+              href={`https://wa.me/${waNumber(s.whatsapp)}`}
               target="_blank"
               rel="noreferrer"
               className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted md:inline-flex"
@@ -124,11 +125,16 @@ export function SiteFooter() {
 }
 
 export function StoreMap({ address, lat, lng }: { address?: string; lat?: number | null; lng?: number | null }) {
-  const q = lat && lng ? `${lat},${lng}` : address || "";
+  const hasCoords = typeof lat === "number" && typeof lng === "number" && !Number.isNaN(lat) && !Number.isNaN(lng);
+  const q = hasCoords ? `${lat},${lng}` : (address || "").trim();
   if (!q) return null;
-  const src = lat && lng
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.005}%2C${lat - 0.005}%2C${lng + 0.005}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lng}`
-    : `https://maps.google.com/maps?q=${encodeURIComponent(q)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  // OpenStreetMap embed funciona sem API key. Para endereço, usamos um bbox aproximado do Brasil + marker via search.
+  const src = hasCoords
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(lng as number) - 0.005}%2C${(lat as number) - 0.005}%2C${(lng as number) + 0.005}%2C${(lat as number) + 0.005}&layer=mapnik&marker=${lat}%2C${lng}`
+    : `https://maps.google.com/maps?q=${encodeURIComponent(q)}&hl=pt-BR&z=16&output=embed`;
+  const externalHref = hasCoords
+    ? `https://www.google.com/maps/search/?api=1&query=${lat}%2C${lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
   return (
     <div className="overflow-hidden rounded-xl border border-border shadow-soft">
       <iframe
@@ -138,6 +144,14 @@ export function StoreMap({ address, lat, lng }: { address?: string; lat?: number
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
+      <a
+        href={externalHref}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-center gap-2 border-t border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
+      >
+        <MapPin className="size-4 text-primary" /> Abrir no Google Maps
+      </a>
     </div>
   );
 }
