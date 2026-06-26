@@ -19,6 +19,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -27,10 +28,15 @@ function AuthPage() {
   }, [navigate]);
 
   async function signIn() {
+    setAuthError("");
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const message = "E-mail ou senha incorretos. Confira os dados e tente novamente.";
+      setAuthError(message);
+      return toast.error(message);
+    }
     toast.success("Bem-vindo!");
     navigate({ to: "/admin" });
   }
@@ -74,12 +80,21 @@ function AuthPage() {
               <TabsTrigger value="login">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
-            <TabsContent value="login" className="mt-5 space-y-3">
-              <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><Label>Senha</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-              <Button onClick={signIn} disabled={loading} className="w-full bg-brand text-primary-foreground hover:opacity-90">
-                <KeyRound className="mr-2 size-4" /> Entrar
-              </Button>
+            <TabsContent value="login" className="mt-5">
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  signIn();
+                }}
+              >
+                <div><Label>E-mail</Label><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <div><Label>Senha</Label><Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+                {authError ? <p className="text-sm font-medium text-destructive">{authError}</p> : null}
+                <Button type="submit" disabled={loading || !email.trim() || !password} className="w-full bg-brand text-primary-foreground hover:opacity-90">
+                  <KeyRound className="mr-2 size-4" /> {loading ? "Entrando…" : "Entrar"}
+                </Button>
+              </form>
             </TabsContent>
             <TabsContent value="signup" className="mt-5 space-y-3">
               <div><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
