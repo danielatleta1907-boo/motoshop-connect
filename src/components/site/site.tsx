@@ -52,7 +52,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {s?.whatsapp && (
             <a
-              href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`}
+              href={`https://wa.me/${waNumber(s.whatsapp)}`}
               target="_blank"
               rel="noreferrer"
               className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted md:inline-flex"
