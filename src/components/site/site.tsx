@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
+import { waNumber } from "@/lib/format";
 import { LogIn, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
