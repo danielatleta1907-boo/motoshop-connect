@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MotosIdRouteImport } from './routes/motos.$id'
 import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
 
+const SuperAdminRoute = SuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/super-admin': typeof SuperAdminRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/motos/$id': typeof MotosIdRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/super-admin': typeof SuperAdminRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/motos/$id': typeof MotosIdRoute
 }
@@ -60,27 +68,49 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/super-admin': typeof SuperAdminRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/motos/$id': typeof MotosIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/auth' | '/loja/$slug' | '/motos/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/super-admin'
+    | '/loja/$slug'
+    | '/motos/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth' | '/loja/$slug' | '/motos/$id'
-  id: '__root__' | '/' | '/admin' | '/auth' | '/loja/$slug' | '/motos/$id'
+  to: '/' | '/admin' | '/auth' | '/super-admin' | '/loja/$slug' | '/motos/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/super-admin'
+    | '/loja/$slug'
+    | '/motos/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  SuperAdminRoute: typeof SuperAdminRoute
   LojaSlugRoute: typeof LojaSlugRoute
   MotosIdRoute: typeof MotosIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/super-admin': {
+      id: '/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -123,6 +153,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  SuperAdminRoute: SuperAdminRoute,
   LojaSlugRoute: LojaSlugRoute,
   MotosIdRoute: MotosIdRoute,
 }

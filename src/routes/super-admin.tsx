@@ -272,7 +272,7 @@ function TenantsTab() {
 
   async function toggle(t: any, status: string) {
     if (!confirm(`Mudar status para ${status}?`)) return;
-    const { error } = await supabase.from("tenants").update({ status }).eq("id", t.id);
+    const { error } = await supabase.from("tenants").update({ status: status as any }).eq("id", t.id);
     if (error) return toast.error(error.message);
     toast.success("Atualizado"); load();
   }
