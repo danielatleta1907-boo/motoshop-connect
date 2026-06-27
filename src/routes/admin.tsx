@@ -13,14 +13,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SubscribeDialog } from "@/components/SubscribeDialog";
 import {
   LogOut, Plus, Edit2, Trash2, Upload, ImagePlus, X, FileText,
   TrendingUp, Bike, Users, CheckCircle2, DollarSign, Settings as Cog,
+  Clock, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line,
 } from "recharts";
 
 export const Route = createFileRoute("/admin")({
@@ -30,8 +31,9 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, role, tenant, loading, signOut, reload } = useAuth();
   const navigate = useNavigate();
+  const [renewOpen, setRenewOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -39,15 +41,44 @@ function AdminPage() {
 
   if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Carregando…</div>;
   if (!user) return null;
-  if (!isAdmin) {
+
+  // Super admin → redireciona pro super painel
+  if (role === "super_admin") {
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center">
         <div>
-          <h2 className="text-xl font-bold">Sem permissão</h2>
-          <p className="mt-2 text-muted-foreground">Sua conta não é administradora. Peça acesso ao responsável.</p>
-          <Button onClick={signOut} className="mt-4">Sair</Button>
+          <ShieldAlert className="mx-auto mb-3 size-12 text-primary" />
+          <h2 className="text-xl font-bold">Você é Super Admin</h2>
+          <Link to="/super-admin" className="mt-4 inline-block">
+            <Button className="bg-brand text-primary-foreground hover:opacity-90">Ir para o painel do super admin</Button>
+          </Link>
         </div>
       </div>
+    );
+  }
+
+  // Sem tenant ainda → aguardando aprovação
+  if (!tenant || role !== "admin") {
+    return (
+      <PendingScreen
+        email={user.email!}
+        onSignOut={() => signOut().then(() => navigate({ to: "/auth" }))}
+      />
+    );
+  }
+
+  // Suspenso por atraso
+  if (tenant.status === "suspended" || tenant.status === "cancelled") {
+    return (
+      <>
+        <SuspendedScreen
+          tenant={tenant}
+          email={user.email!}
+          onRenew={() => setRenewOpen(true)}
+          onSignOut={() => signOut().then(() => navigate({ to: "/auth" }))}
+        />
+        <SubscribeDialog open={renewOpen} onOpenChange={setRenewOpen} mode="renew" tenantName={tenant.store_name} onSubmitted={reload} />
+      </>
     );
   }
 
@@ -55,15 +86,18 @@ function AdminPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">M</div>
             <div>
-              <div className="text-sm font-bold">Painel da Loja</div>
+              <div className="text-sm font-bold">{tenant.store_name}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
-          </Link>
-          <div className="flex gap-2">
-            <Link to="/"><Button variant="outline" size="sm">Ver loja</Button></Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <DueBadge tenant={tenant} onRenew={() => setRenewOpen(true)} />
+            <Link to="/loja/$slug" params={{ slug: tenant.slug }}>
+              <Button variant="outline" size="sm"><ExternalLink className="mr-2 size-4" />Ver loja</Button>
+            </Link>
             <Button variant="ghost" size="sm" onClick={() => signOut().then(() => navigate({ to: "/auth" }))}>
               <LogOut className="mr-2 size-4" /> Sair
             </Button>
@@ -82,29 +116,88 @@ function AdminPage() {
             <TabsTrigger value="settings"><Cog className="mr-2 size-4" />Configurações</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="dashboard" className="mt-6"><DashboardTab /></TabsContent>
-          <TabsContent value="stock" className="mt-6"><StockTab /></TabsContent>
+          <TabsContent value="dashboard" className="mt-6"><DashboardTab tenantId={tenant.id} /></TabsContent>
+          <TabsContent value="stock" className="mt-6"><StockTab tenantId={tenant.id} /></TabsContent>
           <TabsContent value="leads" className="mt-6"><LeadsTab /></TabsContent>
           <TabsContent value="sold" className="mt-6"><SoldTab /></TabsContent>
-          <TabsContent value="receipts" className="mt-6"><ReceiptsTab /></TabsContent>
-          <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
+          <TabsContent value="receipts" className="mt-6"><ReceiptsTab tenantId={tenant.id} /></TabsContent>
+          <TabsContent value="settings" className="mt-6"><SettingsTab tenantId={tenant.id} /></TabsContent>
         </Tabs>
       </main>
+
+      <SubscribeDialog open={renewOpen} onOpenChange={setRenewOpen} mode="renew" tenantName={tenant.store_name} onSubmitted={reload} />
+    </div>
+  );
+}
+
+function DueBadge({ tenant, onRenew }: { tenant: any; onRenew: () => void }) {
+  if (!tenant.subscription_due_date) return null;
+  const due = new Date(tenant.subscription_due_date);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  const warn = days <= 5;
+  return (
+    <button onClick={onRenew} className={`hidden md:inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold ${warn ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border bg-card text-muted-foreground"}`}>
+      <Clock className="size-3.5" />
+      Assinatura: {due.toLocaleDateString("pt-BR")} {warn ? `(${days}d)` : ""}
+      {warn && <span className="ml-1 underline">Renovar</span>}
+    </button>
+  );
+}
+
+function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-hero p-6 text-center text-white">
+      <div className="max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 backdrop-blur">
+        <Clock className="mx-auto mb-3 size-12 text-primary-foreground" />
+        <h2 className="text-2xl font-bold">Aguardando aprovação</h2>
+        <p className="mt-2 text-white/80">
+          Olá, <strong>{email}</strong>. Seu cadastro foi recebido e está aguardando o super admin validar seu pagamento PIX.
+        </p>
+        <p className="mt-3 text-sm text-white/70">
+          Se ainda não enviou o comprovante, volte à tela inicial e clique em <strong>"Assinar"</strong>.
+        </p>
+        <div className="mt-6 flex gap-2">
+          <Link to="/" className="flex-1"><Button variant="outline" className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20">Voltar ao site</Button></Link>
+          <Button onClick={onSignOut} variant="ghost" className="text-white">Sair</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuspendedScreen({ tenant, email, onRenew, onSignOut }: any) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-background p-6 text-center">
+      <div className="max-w-md rounded-2xl border border-destructive/40 bg-destructive/5 p-8">
+        <AlertTriangle className="mx-auto mb-3 size-12 text-destructive" />
+        <h2 className="text-2xl font-bold">Loja suspensa</h2>
+        <p className="mt-2 text-muted-foreground">
+          A loja <strong>{tenant.store_name}</strong> está suspensa por atraso no pagamento.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">Conta: {email}</p>
+        <div className="mt-6 space-y-2">
+          <Button onClick={onRenew} size="lg" className="w-full bg-brand text-primary-foreground hover:opacity-90">
+            <RefreshCw className="mr-2 size-4" /> Pagar e reativar
+          </Button>
+          <Button onClick={onSignOut} variant="ghost" className="w-full">Sair</Button>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ============ DASHBOARD ============ */
-function DashboardTab() {
+function DashboardTab({ tenantId }: { tenantId: string }) {
   const [stats, setStats] = useState({ stock: 0, pending: 0, sold: 0, revenue: 0, cost: 0 });
   const [byMonth, setByMonth] = useState<{ month: string; sales: number; profit: number }[]>([]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [tenantId]);
   async function load() {
     const [{ count: stock }, { count: pending }, { data: sold }] = await Promise.all([
-      supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("status", "available"),
-      supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("orders").select("sold_price, updated_at, motorcycle_id, motorcycles(cost_price)").eq("status", "sold"),
+      supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "available"),
+      supabase.from("orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "pending"),
+      supabase.from("orders").select("sold_price, updated_at, motorcycle_id, motorcycles(cost_price)").eq("tenant_id", tenantId).eq("status", "sold"),
     ]);
     let revenue = 0; let cost = 0;
     const byM: Record<string, { sales: number; profit: number }> = {};
@@ -145,9 +238,7 @@ function DashboardTab() {
         </div>
         <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
           <div className="text-sm text-muted-foreground">Ticket médio</div>
-          <div className="mt-1 text-2xl font-extrabold">
-            {brl(stats.sold > 0 ? stats.revenue / stats.sold : 0)}
-          </div>
+          <div className="mt-1 text-2xl font-extrabold">{brl(stats.sold > 0 ? stats.revenue / stats.sold : 0)}</div>
         </div>
       </div>
 
@@ -213,7 +304,7 @@ const motoSchema = z.object({
   status: z.enum(["available", "reserved", "sold"]),
 });
 
-function StockTab() {
+function StockTab({ tenantId }: { tenantId: string }) {
   const [list, setList] = useState<any[]>([]);
   const [covers, setCovers] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<any | null>(null);
@@ -223,6 +314,7 @@ function StockTab() {
     const { data } = await supabase
       .from("motorcycles")
       .select("*, motorcycle_photos(url, sort_order)")
+      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false });
     setList(data ?? []);
     const c: Record<string, string> = {};
@@ -232,14 +324,13 @@ function StockTab() {
     }));
     setCovers(c);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [tenantId]);
 
   async function remove(id: string) {
     if (!confirm("Excluir esta moto e suas fotos?")) return;
     const { error } = await supabase.from("motorcycles").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Moto removida");
-    load();
+    toast.success("Moto removida"); load();
   }
 
   return (
@@ -282,17 +373,12 @@ function StockTab() {
         ))}
       </div>
 
-      <MotoFormDialog
-        open={open}
-        onOpenChange={setOpen}
-        moto={editing}
-        onSaved={() => { setOpen(false); load(); }}
-      />
+      <MotoFormDialog tenantId={tenantId} open={open} onOpenChange={setOpen} moto={editing} onSaved={() => { setOpen(false); load(); }} />
     </div>
   );
 }
 
-function MotoFormDialog({ open, onOpenChange, moto, onSaved }: any) {
+function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   const empty = {
     brand: "", model: "", year: new Date().getFullYear(), km: 0,
     price_cash: 0, price_installment: 0, installment_count: 12, cost_price: 0,
@@ -348,23 +434,20 @@ function MotoFormDialog({ open, onOpenChange, moto, onSaved }: any) {
       const { error } = await supabase.from("motorcycles").update(parsed.data).eq("id", id);
       if (error) { setSaving(false); return toast.error(error.message); }
     } else {
-      const { data, error } = await supabase.from("motorcycles").insert(parsed.data).select("id").single();
+      const { data, error } = await supabase.from("motorcycles").insert({ ...parsed.data, tenant_id: tenantId }).select("id").single();
       if (error || !data) { setSaving(false); return toast.error(error?.message || "Erro"); }
       id = data.id;
     }
-
-    // upload new photos
     const news = photos.filter((p) => p.file);
     for (let i = 0; i < news.length; i++) {
       const p = news[i];
-      const path = `${id}/${Date.now()}_${i}_${p.file!.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
+      const path = `${tenantId}/${id}/${Date.now()}_${i}_${p.file!.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
       const { error } = await supabase.storage.from("motorcycle-photos").upload(path, p.file!);
       if (error) { toast.error("Falha no upload de foto"); continue; }
       await supabase.from("motorcycle_photos").insert({ motorcycle_id: id, url: path, sort_order: photos.indexOf(p) });
     }
     setSaving(false);
-    toast.success("Salvo!");
-    onSaved();
+    toast.success("Salvo!"); onSaved();
   }
 
   return (
@@ -392,18 +475,14 @@ function MotoFormDialog({ open, onOpenChange, moto, onSaved }: any) {
               </SelectContent>
             </Select>
           </Field>
-          <div className="sm:col-span-2">
-            <Field label="Descrição"><Textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
-          </div>
+          <div className="sm:col-span-2"><Field label="Descrição"><Textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field></div>
           <div className="sm:col-span-2">
             <Label>Fotos</Label>
             <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {photos.map((p, i) => (
                 <div key={i} className="relative aspect-square overflow-hidden rounded-md border border-border">
                   <img src={p.signed} className="h-full w-full object-cover" alt="" />
-                  <button onClick={() => removePhoto(i)} className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground">
-                    <X className="size-3" />
-                  </button>
+                  <button onClick={() => removePhoto(i)} className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="size-3" /></button>
                 </div>
               ))}
               <label className="grid aspect-square cursor-pointer place-items-center rounded-md border-2 border-dashed border-border text-muted-foreground hover:bg-muted">
@@ -415,9 +494,7 @@ function MotoFormDialog({ open, onOpenChange, moto, onSaved }: any) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">
-            {saving ? "Salvando…" : "Salvar"}
-          </Button>
+          <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">{saving ? "Salvando…" : "Salvar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -451,8 +528,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
   async function updateStatus(id: string, status: OrderStatus) {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Atualizado");
-    load();
+    toast.success("Atualizado"); load();
   }
 
   async function confirmSell() {
@@ -466,7 +542,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
     setSellOrder(null); setSoldPrice(""); load();
   }
 
-  const total = orders.reduce((s, o) => s + (Number(o.sold_price) || 0), 0);
+  const total = useMemo(() => orders.reduce((s, o) => s + (Number(o.sold_price) || 0), 0), [orders]);
 
   return (
     <div>
@@ -478,12 +554,8 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Moto</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead>Cliente</TableHead><TableHead>Contato</TableHead><TableHead>Moto</TableHead>
+              <TableHead>Status</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -494,10 +566,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
                   <div className="font-semibold">{o.customer_name}</div>
                   {o.message && <div className="text-xs text-muted-foreground">{o.message}</div>}
                 </TableCell>
-                <TableCell>
-                  <div className="text-sm">{o.customer_phone}</div>
-                  <div className="text-xs text-muted-foreground">{o.customer_email}</div>
-                </TableCell>
+                <TableCell><div className="text-sm">{o.customer_phone}</div><div className="text-xs text-muted-foreground">{o.customer_email}</div></TableCell>
                 <TableCell>
                   <div className="text-sm font-medium">{o.motorcycles?.brand} {o.motorcycles?.model}</div>
                   <div className="text-xs text-muted-foreground">{o.motorcycles?.year} · {brl(Number(o.motorcycles?.price_cash))}</div>
@@ -522,12 +591,8 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
         <DialogContent>
           <DialogHeader><DialogTitle>Registrar venda</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {sellOrder?.motorcycles?.brand} {sellOrder?.motorcycles?.model} para <strong>{sellOrder?.customer_name}</strong>
-            </p>
-            <Field label="Valor da venda (R$)">
-              <Input type="number" step="0.01" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} />
-            </Field>
+            <p className="text-sm text-muted-foreground">{sellOrder?.motorcycles?.brand} {sellOrder?.motorcycles?.model} para <strong>{sellOrder?.customer_name}</strong></p>
+            <Field label="Valor da venda (R$)"><Input type="number" step="0.01" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} /></Field>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSellOrder(null)}>Cancelar</Button>
@@ -540,7 +605,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
 }
 
 /* ============ RECEIPTS ============ */
-function ReceiptsTab() {
+function ReceiptsTab({ tenantId }: { tenantId: string }) {
   const [list, setList] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [motos, setMotos] = useState<any[]>([]);
@@ -552,16 +617,20 @@ function ReceiptsTab() {
     const { data } = await supabase.from("payment_receipts").select("*, motorcycles(brand, model)").order("created_at", { ascending: false });
     setList(data ?? []);
   }
-  useEffect(() => { load(); supabase.from("motorcycles").select("id, brand, model").then(({ data }) => setMotos(data ?? [])); }, []);
+  useEffect(() => {
+    load();
+    supabase.from("motorcycles").select("id, brand, model").eq("tenant_id", tenantId).then(({ data }) => setMotos(data ?? []));
+  }, [tenantId]);
 
   async function save() {
     if (!file || !f.title) return toast.error("Informe título e arquivo");
     setSaving(true);
-    const path = `${Date.now()}_${file.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
+    const path = `${tenantId}/${Date.now()}_${file.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
     const { error: upErr } = await supabase.storage.from("payment-receipts").upload(path, file);
     if (upErr) { setSaving(false); return toast.error(upErr.message); }
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("payment_receipts").insert({
+      tenant_id: tenantId,
       title: f.title,
       amount: f.amount ? Number(f.amount) : null,
       doc_type: f.doc_type,
@@ -649,9 +718,7 @@ function ReceiptsTab() {
             </Field>
             <Field label="Valor"><Input type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field>
             <Field label="Observações"><Textarea rows={2} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
-            <Field label="Arquivo (foto ou PDF)">
-              <Input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            </Field>
+            <Field label="Arquivo (foto ou PDF)"><Input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></Field>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -666,20 +733,20 @@ function ReceiptsTab() {
 }
 
 /* ============ SETTINGS ============ */
-function SettingsTab() {
+function SettingsTab({ tenantId }: { tenantId: string }) {
   const [s, setS] = useState<any>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   async function load() {
-    const { data } = await supabase.from("store_settings").select("*").eq("id", 1).maybeSingle();
+    const { data } = await supabase.from("store_settings").select("*").eq("tenant_id", tenantId).maybeSingle();
     if (data) {
       setS({ ...data, business_hours: data.business_hours || {} });
       if (data.logo_url) setLogoPreview(await signedUrl("store-assets", data.logo_url));
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [tenantId]);
 
   if (!s) return <div className="text-muted-foreground">Carregando…</div>;
 
@@ -691,7 +758,7 @@ function SettingsTab() {
     setSaving(true);
     let logo_url = s.logo_url;
     if (logoFile) {
-      const path = `logo_${Date.now()}_${logoFile.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
+      const path = `${tenantId}/logo_${Date.now()}_${logoFile.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
       const { error } = await supabase.storage.from("store-assets").upload(path, logoFile, { upsert: true });
       if (!error) logo_url = path;
     }
@@ -702,19 +769,14 @@ function SettingsTab() {
       address: s.address,
       latitude: s.latitude ? Number(s.latitude) : null,
       longitude: s.longitude ? Number(s.longitude) : null,
-      whatsapp: s.whatsapp,
-      phone: s.phone,
-      email: s.email,
-      instagram: s.instagram,
-      facebook: s.facebook,
-      business_hours: s.business_hours,
-      about: s.about,
-    }).eq("id", 1);
+      whatsapp: s.whatsapp, phone: s.phone, email: s.email,
+      instagram: s.instagram, facebook: s.facebook,
+      business_hours: s.business_hours, about: s.about,
+    }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
-    setLogoFile(null);
-    load();
+    setLogoFile(null); load();
   }
 
   const days: [string, string][] = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
@@ -724,9 +786,7 @@ function SettingsTab() {
       <div className="space-y-4 rounded-xl border border-border bg-card p-5">
         <h3 className="font-bold">Identidade</h3>
         <Field label="Nome da loja"><Input value={s.store_name || ""} onChange={(e) => setS({ ...s, store_name: e.target.value })} /></Field>
-        <Field label="Frase motivadora (topo da loja)">
-          <Input value={s.motivational_phrase || ""} onChange={(e) => setS({ ...s, motivational_phrase: e.target.value })} />
-        </Field>
+        <Field label="Frase motivadora (topo da loja)"><Input value={s.motivational_phrase || ""} onChange={(e) => setS({ ...s, motivational_phrase: e.target.value })} /></Field>
         <div>
           <Label>Logo</Label>
           <div className="mt-2 flex items-center gap-3">
@@ -749,7 +809,7 @@ function SettingsTab() {
           <Field label="Longitude (opcional)"><Input type="number" step="0.0000001" value={s.longitude || ""} onChange={(e) => setS({ ...s, longitude: e.target.value })} /></Field>
         </div>
         <p className="text-xs text-muted-foreground">Se não informar lat/lng, o mapa usa o endereço.</p>
-        <Field label="WhatsApp (com DDI/DDD, só números)"><Input value={s.whatsapp || ""} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} /></Field>
+        <Field label="WhatsApp (com DDD)"><Input value={s.whatsapp || ""} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} /></Field>
         <Field label="Telefone"><Input value={s.phone || ""} onChange={(e) => setS({ ...s, phone: e.target.value })} /></Field>
         <Field label="E-mail"><Input value={s.email || ""} onChange={(e) => setS({ ...s, email: e.target.value })} /></Field>
         <div className="grid grid-cols-2 gap-3">
@@ -770,9 +830,7 @@ function SettingsTab() {
       </div>
 
       <div className="lg:col-span-2 flex justify-end">
-        <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">
-          {saving ? "Salvando…" : "Salvar tudo"}
-        </Button>
+        <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">{saving ? "Salvando…" : "Salvar tudo"}</Button>
       </div>
     </div>
   );
