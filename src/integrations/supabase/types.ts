@@ -314,10 +314,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "super_admin"
       moto_status: "available" | "reserved" | "sold"
       order_status: "pending" | "contacted" | "sold" | "cancelled"
+      proof_status: "pending" | "approved" | "rejected"
       receipt_type: "receipt" | "invoice"
+      tenant_status: "pending" | "active" | "suspended" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -445,10 +447,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "super_admin"],
       moto_status: ["available", "reserved", "sold"],
       order_status: ["pending", "contacted", "sold", "cancelled"],
+      proof_status: ["pending", "approved", "rejected"],
       receipt_type: ["receipt", "invoice"],
+      tenant_status: ["pending", "active", "suspended", "cancelled"],
     },
   },
 } as const
