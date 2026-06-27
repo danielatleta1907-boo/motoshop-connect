@@ -61,6 +61,7 @@ export type Database = {
           price_installment: number | null
           status: Database["public"]["Enums"]["moto_status"]
           stock_quantity: number
+          tenant_id: string | null
           updated_at: string
           year: number
         }
@@ -78,6 +79,7 @@ export type Database = {
           price_installment?: number | null
           status?: Database["public"]["Enums"]["moto_status"]
           stock_quantity?: number
+          tenant_id?: string | null
           updated_at?: string
           year: number
         }
@@ -95,10 +97,19 @@ export type Database = {
           price_installment?: number | null
           status?: Database["public"]["Enums"]["moto_status"]
           stock_quantity?: number
+          tenant_id?: string | null
           updated_at?: string
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "motorcycles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
@@ -111,6 +122,7 @@ export type Database = {
           motorcycle_id: string
           sold_price: number | null
           status: Database["public"]["Enums"]["order_status"]
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -123,6 +135,7 @@ export type Database = {
           motorcycle_id: string
           sold_price?: number | null
           status?: Database["public"]["Enums"]["order_status"]
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -135,6 +148,7 @@ export type Database = {
           motorcycle_id?: string
           sold_price?: number | null
           status?: Database["public"]["Enums"]["order_status"]
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -143,6 +157,75 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_proofs: {
+        Row: {
+          amount: number
+          created_at: string
+          desired_slug: string | null
+          desired_store_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          notes: string | null
+          period_months: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: Database["public"]["Enums"]["proof_status"]
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          desired_slug?: string | null
+          desired_store_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          period_months?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["proof_status"]
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          desired_slug?: string | null
+          desired_store_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          period_months?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["proof_status"]
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -158,6 +241,7 @@ export type Database = {
           motorcycle_id: string | null
           notes: string | null
           order_id: string | null
+          tenant_id: string | null
           title: string
           uploaded_by: string | null
         }
@@ -171,6 +255,7 @@ export type Database = {
           motorcycle_id?: string | null
           notes?: string | null
           order_id?: string | null
+          tenant_id?: string | null
           title: string
           uploaded_by?: string | null
         }
@@ -184,6 +269,7 @@ export type Database = {
           motorcycle_id?: string | null
           notes?: string | null
           order_id?: string | null
+          tenant_id?: string | null
           title?: string
           uploaded_by?: string | null
         }
@@ -200,6 +286,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -232,7 +325,6 @@ export type Database = {
           business_hours: Json | null
           email: string | null
           facebook: string | null
-          id: number
           instagram: string | null
           latitude: number | null
           logo_url: string | null
@@ -240,6 +332,7 @@ export type Database = {
           motivational_phrase: string | null
           phone: string | null
           store_name: string
+          tenant_id: string
           updated_at: string
           whatsapp: string | null
         }
@@ -249,7 +342,6 @@ export type Database = {
           business_hours?: Json | null
           email?: string | null
           facebook?: string | null
-          id?: number
           instagram?: string | null
           latitude?: number | null
           logo_url?: string | null
@@ -257,6 +349,7 @@ export type Database = {
           motivational_phrase?: string | null
           phone?: string | null
           store_name?: string
+          tenant_id: string
           updated_at?: string
           whatsapp?: string | null
         }
@@ -266,7 +359,6 @@ export type Database = {
           business_hours?: Json | null
           email?: string | null
           facebook?: string | null
-          id?: number
           instagram?: string | null
           latitude?: number | null
           logo_url?: string | null
@@ -274,8 +366,56 @@ export type Database = {
           motivational_phrase?: string | null
           phone?: string | null
           store_name?: string
+          tenant_id?: string
           updated_at?: string
           whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          grace_days: number
+          id: string
+          monthly_price: number
+          owner_id: string
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          store_name: string
+          subscription_due_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grace_days?: number
+          id?: string
+          monthly_price?: number
+          owner_id: string
+          slug: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          store_name: string
+          subscription_due_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grace_days?: number
+          id?: string
+          monthly_price?: number
+          owner_id?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          store_name?: string
+          subscription_due_date?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -305,6 +445,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_subscriber: {
+        Args: {
+          p_months?: number
+          p_proof_id: string
+          p_slug: string
+          p_store_name: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -312,6 +462,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: never; Returns: boolean }
+      reject_subscriber: {
+        Args: { p_proof_id: string; p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
+      renew_tenant: {
+        Args: { p_months?: number; p_proof_id: string; p_tenant_id: string }
+        Returns: undefined
+      }
+      suspend_overdue_tenants: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "staff" | "super_admin"
