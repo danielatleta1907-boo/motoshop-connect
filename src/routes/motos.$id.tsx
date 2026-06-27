@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { SiteHeader, SiteFooter, StoreMap } from "@/components/site/site";
+import { SiteHeader, SiteFooter, StoreMap, type StoreSettings } from "@/components/site/site";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import { ArrowLeft, MessageCircle, ShoppingBag, CheckCircle2, Calendar, Gauge, P
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/motos/$id")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Detalhes da moto — MotoStore" }] }),
   component: MotoDetail,
 });
@@ -30,7 +31,8 @@ function MotoDetail() {
   const [moto, setMoto] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [active, setActive] = useState(0);
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [slug, setSlug] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -40,22 +42,26 @@ function MotoDetail() {
     (async () => {
       const { data } = await supabase
         .from("motorcycles")
-        .select("*, motorcycle_photos(url, sort_order)")
+        .select("*, motorcycle_photos(url, sort_order), tenants(id, slug, status)")
         .eq("id", id)
         .maybeSingle();
       if (!data) return;
       setMoto(data);
+      setSlug((data as any).tenants?.slug || "");
       const sorted = (data.motorcycle_photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
       const urls = await Promise.all(sorted.map((p: any) => signedUrl("motorcycle-photos", p.url)));
       setPhotos(urls.filter(Boolean));
+      if ((data as any).tenant_id) {
+        const { data: s } = await supabase.from("store_settings").select("*").eq("tenant_id", (data as any).tenant_id).maybeSingle();
+        setSettings(s as StoreSettings | null);
+      }
     })();
-    supabase.from("store_settings").select("*").eq("id", 1).maybeSingle().then(({ data }) => setSettings(data));
   }, [id]);
 
   if (!moto) {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader settings={settings} slug={slug} />
         <div className="mx-auto max-w-7xl px-4 py-20 text-center text-muted-foreground">Carregando…</div>
       </div>
     );
@@ -65,51 +71,40 @@ function MotoDetail() {
 
   async function submit() {
     const parsed = orderSchema.safeParse(form);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setSubmitting(true);
     const { error } = await supabase.from("orders").insert({
       motorcycle_id: id,
+      tenant_id: moto.tenant_id,
       ...parsed.data,
     });
     setSubmitting(false);
-    if (error) {
-      toast.error("Não foi possível registrar sua encomenda. Tente novamente.");
-      return;
-    }
+    if (error) return toast.error("Não foi possível registrar sua encomenda.");
     setDone(true);
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
+      <SiteHeader settings={settings} slug={slug} />
       <div className="mx-auto max-w-7xl px-4 py-6">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" /> Voltar ao catálogo
-        </Link>
+        {slug && (
+          <Link to="/loja/$slug" params={{ slug }} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-4" /> Voltar ao catálogo
+          </Link>
+        )}
       </div>
 
       <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-10 lg:grid-cols-[1.2fr_1fr]">
         <div>
           <div className="overflow-hidden rounded-2xl border border-border bg-muted shadow-soft">
             <div className="aspect-[4/3] bg-graphite">
-              {photos[active] ? (
-                <img src={photos[active]} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>
-              )}
+              {photos[active] ? <img src={photos[active]} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>}
             </div>
           </div>
           {photos.length > 1 && (
             <div className="mt-3 grid grid-cols-5 gap-2">
               {photos.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActive(i)}
-                  className={`aspect-square overflow-hidden rounded-lg border-2 ${i === active ? "border-primary" : "border-transparent"}`}
-                >
+                <button key={i} onClick={() => setActive(i)} className={`aspect-square overflow-hidden rounded-lg border-2 ${i === active ? "border-primary" : "border-transparent"}`}>
                   <img src={p} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
@@ -135,38 +130,26 @@ function MotoDetail() {
                 <span className="text-muted-foreground">Parcelado: </span>
                 <span className="font-semibold">{brl(Number(moto.price_installment))}</span>
                 {moto.installment_count && (
-                  <span className="text-muted-foreground">
-                    {" "}em até {moto.installment_count}x de{" "}
-                    {brl(Number(moto.price_installment) / moto.installment_count)}
-                  </span>
+                  <span className="text-muted-foreground"> em até {moto.installment_count}x de {brl(Number(moto.price_installment) / moto.installment_count)}</span>
                 )}
               </div>
             )}
           </div>
 
-          {moto.description && (
-            <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{moto.description}</div>
-          )}
+          {moto.description && <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{moto.description}</div>}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button
-              size="lg"
-              className="bg-brand text-primary-foreground hover:opacity-90"
-              onClick={() => { setOpen(true); setDone(false); }}
-              disabled={moto.status === "sold"}
-            >
+            <Button size="lg" className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={moto.status === "sold"}>
               <ShoppingBag className="mr-2 size-4" /> Encomendar
             </Button>
             {settings?.whatsapp && (
               <a href={whatsappLink(settings.whatsapp, wppMsg)} target="_blank" rel="noreferrer">
-                <Button size="lg" variant="outline" className="w-full">
-                  <MessageCircle className="mr-2 size-4" /> WhatsApp
-                </Button>
+                <Button size="lg" variant="outline" className="w-full"><MessageCircle className="mr-2 size-4" /> WhatsApp</Button>
               </a>
             )}
           </div>
 
-          {settings && (
+          {settings?.address && (
             <div className="mt-8">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Retire na loja</h3>
               <StoreMap address={settings.address} lat={settings.latitude} lng={settings.longitude} />
@@ -185,22 +168,10 @@ function MotoDetail() {
                 <DialogDescription>Deixe seus dados que entraremos em contato.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-3">
-                <div>
-                  <Label>Nome completo</Label>
-                  <Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Telefone / WhatsApp</Label>
-                  <Input value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} />
-                </div>
-                <div>
-                  <Label>E-mail</Label>
-                  <Input type="email" value={form.customer_email} onChange={(e) => setForm({ ...form, customer_email: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Mensagem (opcional)</Label>
-                  <Textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-                </div>
+                <div><Label>Nome completo</Label><Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} /></div>
+                <div><Label>Telefone / WhatsApp</Label><Input value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} /></div>
+                <div><Label>E-mail</Label><Input type="email" value={form.customer_email} onChange={(e) => setForm({ ...form, customer_email: e.target.value })} /></div>
+                <div><Label>Mensagem (opcional)</Label><Textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></div>
                 <Button onClick={submit} disabled={submitting} className="bg-brand text-primary-foreground hover:opacity-90">
                   {submitting ? "Enviando…" : "Confirmar encomenda"}
                 </Button>
@@ -211,8 +182,7 @@ function MotoDetail() {
               <CheckCircle2 className="mx-auto mb-3 size-14 text-primary" />
               <h3 className="text-xl font-bold">Encomenda registrada!</h3>
               <p className="mt-3 text-sm text-muted-foreground">
-                Os pagamentos são realizados <strong>somente na loja física</strong>, após análise e aprovação do seu pedido.
-                Nossa equipe entrará em contato pelo telefone ou e-mail informado. Obrigado!
+                Os pagamentos são realizados <strong>somente na loja física</strong>, após análise e aprovação. Nossa equipe entrará em contato.
               </p>
               <Button className="mt-5" onClick={() => setOpen(false)}>Fechar</Button>
             </div>
@@ -220,15 +190,11 @@ function MotoDetail() {
         </DialogContent>
       </Dialog>
 
-      <SiteFooter />
+      <SiteFooter settings={settings} />
     </div>
   );
 }
 
 function Badge({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium">
-      {icon} {children}
-    </div>
-  );
+  return <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium">{icon} {children}</div>;
 }
