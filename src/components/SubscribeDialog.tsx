@@ -78,7 +78,7 @@ export function SubscribeDialog({
     });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Comprovante enviado! Aguarde a aprovação do super admin.");
+    toast.success("Comprovante enviado! A liberação acontece em até 12 horas após a confirmação do pagamento.", { duration: 8000 });
     onSubmitted?.();
     onOpenChange(false);
   }
