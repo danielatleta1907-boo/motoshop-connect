@@ -265,7 +265,7 @@ function TenantsTab() {
   async function load() {
     const { data } = await supabase
       .from("tenants")
-      .select("*, profiles:owner_id(full_name, email)")
+      .select("*, profiles!tenants_owner_profile_fkey(full_name, email)")
       .order("created_at", { ascending: false });
     setList(data ?? []);
   }
