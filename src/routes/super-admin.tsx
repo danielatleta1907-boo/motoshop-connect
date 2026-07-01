@@ -90,12 +90,13 @@ function PendingTab() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("payment_proofs")
-      .select("*, profiles:user_id(full_name, email), tenants:tenant_id(id, slug, store_name, status)")
+      .select("*, profiles!payment_proofs_user_profile_fkey(full_name, email), tenants:tenant_id(id, slug, store_name, status)")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    setProofs(data ?? []);
+    if (error) { toast.error(error.message); return; }
+    setProofs((data ?? []).map((p: any) => ({ ...p, profiles: p.profiles })));
   }
   useEffect(() => { load(); }, []);
 
@@ -264,7 +265,7 @@ function TenantsTab() {
   async function load() {
     const { data } = await supabase
       .from("tenants")
-      .select("*, profiles:owner_id(full_name, email)")
+      .select("*, profiles!tenants_owner_profile_fkey(full_name, email)")
       .order("created_at", { ascending: false });
     setList(data ?? []);
   }
@@ -330,7 +331,7 @@ function TenantsTab() {
 function AllProofsTab() {
   const [list, setList] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from("payment_proofs").select("*, profiles:user_id(email)").order("created_at", { ascending: false })
+    supabase.from("payment_proofs").select("*, profiles!payment_proofs_user_profile_fkey(email)").order("created_at", { ascending: false })
       .then(({ data }) => setList(data ?? []));
   }, []);
   return (

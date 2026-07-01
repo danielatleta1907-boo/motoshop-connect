@@ -194,7 +194,20 @@ function Landing() {
             <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">M</div>
             <span className="font-bold">MotoStore SaaS</span>
           </div>
-          <p className="text-xs opacity-60">© {new Date().getFullYear()} MotoStore. Todos os direitos reservados.</p>
+          <div className="flex flex-col items-center gap-1 md:flex-row md:gap-4">
+            <p className="text-xs opacity-60">© {new Date().getFullYear()} MotoStore. Todos os direitos reservados.</p>
+            <a
+              href="mailto:danielatleta1907@gmail.com?subject=Preciso%20de%20um%20software&body=Ol%C3%A1%20Daniel%2C%20gostaria%20de%20conversar%20sobre%20o%20desenvolvimento%20de%20um%20software."
+              onClick={(e) => {
+                if (!confirm("Precisa de um software sob medida? Vamos entrar em contato pelo e-mail danielatleta1907@gmail.com?")) {
+                  e.preventDefault();
+                }
+              }}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Desenvolvedor
+            </a>
+          </div>
         </div>
       </footer>
 
