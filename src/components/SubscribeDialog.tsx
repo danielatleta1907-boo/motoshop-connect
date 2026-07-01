@@ -48,7 +48,7 @@ export function SubscribeDialog({
   }, [open, payload]);
 
   async function copy() {
-    await navigator.clipboard.writeText(payload);
+    await navigator.clipboard.writeText(PIX_KEY);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -102,15 +102,11 @@ export function SubscribeDialog({
               {qrSrc ? <img src={qrSrc} alt="QR Code PIX" className="h-full w-full" /> : <div className="h-64" />}
             </div>
             <div className="rounded-lg border border-border bg-card p-3 text-xs">
-              <div className="font-semibold text-muted-foreground">Chave PIX (copia e cola)</div>
-              <code className="mt-1 block break-all font-mono text-[10px] leading-tight">{payload}</code>
-              <Button size="sm" variant="outline" className="mt-2 w-full" onClick={copy}>
-                {copied ? <><Check className="mr-2 size-3.5" />Copiado!</> : <><Copy className="mr-2 size-3.5" />Copiar</>}
-              </Button>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-3 text-xs">
-              <div className="font-semibold text-muted-foreground">Ou use só a chave</div>
+              <div className="font-semibold text-muted-foreground">Chave PIX</div>
               <code className="mt-1 block break-all font-mono">{PIX_KEY}</code>
+              <Button size="sm" variant="outline" className="mt-2 w-full" onClick={copy}>
+                {copied ? <><Check className="mr-2 size-3.5" />Copiado!</> : <><Copy className="mr-2 size-3.5" />Copiar chave</>}
+              </Button>
             </div>
           </div>
 
