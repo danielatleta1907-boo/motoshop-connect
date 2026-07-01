@@ -90,12 +90,20 @@ function PendingTab() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const { data } = await supabase
+    const { data: proofsData, error } = await supabase
       .from("payment_proofs")
-      .select("*, profiles:user_id(full_name, email), tenants:tenant_id(id, slug, store_name, status)")
+      .select("*, tenants:tenant_id(id, slug, store_name, status)")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    setProofs(data ?? []);
+    if (error) { toast.error(error.message); return; }
+    const list = proofsData ?? [];
+    const userIds = Array.from(new Set(list.map((p: any) => p.user_id).filter(Boolean)));
+    let profilesMap: Record<string, any> = {};
+    if (userIds.length) {
+      const { data: profs } = await supabase.from("profiles").select("id, full_name, email").in("id", userIds);
+      profilesMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]));
+    }
+    setProofs(list.map((p: any) => ({ ...p, profiles: profilesMap[p.user_id] })));
   }
   useEffect(() => { load(); }, []);
 
