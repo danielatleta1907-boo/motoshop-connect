@@ -331,7 +331,7 @@ function TenantsTab() {
 function AllProofsTab() {
   const [list, setList] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from("payment_proofs").select("*, profiles:user_id(email)").order("created_at", { ascending: false })
+    supabase.from("payment_proofs").select("*, profiles!payment_proofs_user_profile_fkey(email)").order("created_at", { ascending: false })
       .then(({ data }) => setList(data ?? []));
   }, []);
   return (
