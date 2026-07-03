@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   ShieldCheck, LogOut, Inbox, Check, X as XIcon, FileText, Store, RefreshCw,
-  AlertCircle, ExternalLink, Pause, Play, Trash2,
+  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt,
 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
