@@ -213,17 +213,27 @@ function PendingTab() {
                   <Info label="Meses" v={String(view.period_months)} />
                   {view.notes && <Info label="Obs. do lojista" v={view.notes} />}
                 </div>
-                <div>
+                <div className="space-y-2">
                   {fileUrl ? (
-                    view.file_type === "pdf" ? (
-                      <a href={fileUrl} target="_blank" rel="noreferrer">
-                        <Button variant="outline" className="w-full"><ExternalLink className="mr-2 size-4" />Abrir PDF</Button>
-                      </a>
-                    ) : (
-                      <a href={fileUrl} target="_blank" rel="noreferrer">
-                        <img src={fileUrl} alt="comprovante" className="w-full rounded-md border border-border" />
-                      </a>
-                    )
+                    <>
+                      {view.file_type === "image" ? (
+                        <a href={fileUrl} target="_blank" rel="noreferrer">
+                          <img src={fileUrl} alt="comprovante" className="w-full rounded-md border border-border" />
+                        </a>
+                      ) : view.file_type === "pdf" ? (
+                        <iframe src={fileUrl} className="h-72 w-full rounded-md border border-border" title="comprovante" />
+                      ) : (
+                        <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Pré-visualização indisponível — use os botões abaixo</div>
+                      )}
+                      <div className="flex gap-2">
+                        <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1">
+                          <Button variant="outline" className="w-full"><ExternalLink className="mr-2 size-4" />Abrir em nova aba</Button>
+                        </a>
+                        <a href={fileUrl} download className="flex-1">
+                          <Button variant="outline" className="w-full">Baixar</Button>
+                        </a>
+                      </div>
+                    </>
                   ) : <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Sem arquivo</div>}
                 </div>
               </div>
