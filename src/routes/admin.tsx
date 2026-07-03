@@ -95,6 +95,7 @@ function AdminPage() {
           </div>
           <div className="flex items-center gap-2">
             <DueBadge tenant={tenant} onRenew={() => setRenewOpen(true)} />
+            <ShareStoreButton slug={tenant.slug} name={tenant.store_name} />
             <Link to="/loja/$slug" params={{ slug: tenant.slug }}>
               <Button variant="outline" size="sm"><ExternalLink className="mr-2 size-4" />Ver loja</Button>
             </Link>
