@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   ShieldCheck, LogOut, Inbox, Check, X as XIcon, FileText, Store, RefreshCw,
-  AlertCircle, ExternalLink, Pause, Play, Trash2,
+  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt,
 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
@@ -271,6 +271,8 @@ function Info({ label, v }: { label: string; v: any }) {
 /* ============ LOJAS ============ */
 function TenantsTab() {
   const [list, setList] = useState<any[]>([]);
+  const [proofView, setProofView] = useState<any | null>(null);
+  const [proofFileUrl, setProofFileUrl] = useState<string>("");
 
   async function load() {
     const { data } = await supabase
@@ -281,6 +283,24 @@ function TenantsTab() {
   }
   useEffect(() => { load(); }, []);
 
+  async function openTenantProof(t: any) {
+    const { data, error } = await supabase
+      .from("payment_proofs")
+      .select("*")
+      .or(`tenant_id.eq.${t.id},user_id.eq.${t.owner_id}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (error || !data) {
+      setProofView({ none: true, store_name: t.store_name });
+      setProofFileUrl("");
+      return;
+    }
+    setProofView(data);
+    if (data.file_url) setProofFileUrl(await signedUrl("payment-proofs", data.file_url, 60 * 60));
+    else setProofFileUrl("");
+  }
+
   async function toggle(t: any, status: string) {
     if (!confirm(`Mudar status para ${status}?`)) return;
     const { error } = await supabase.from("tenants").update({ status: status as any }).eq("id", t.id);
@@ -289,10 +309,8 @@ function TenantsTab() {
   }
   async function del(t: any) {
     if (!confirm(`EXCLUIR permanentemente a loja ${t.store_name} e seu usuário? Esta ação não pode ser desfeita.`)) return;
-    // delete auth user cascades to tenant
     const { error } = await supabase.rpc("reject_subscriber", { p_user_id: t.owner_id, p_proof_id: "00000000-0000-0000-0000-000000000000", p_reason: "deleted by super admin" });
     if (error) {
-      // fallback: at least mark cancelled
       await supabase.from("tenants").update({ status: "cancelled" }).eq("id", t.id);
     }
     toast.success("Loja removida"); load();
@@ -323,9 +341,10 @@ function TenantsTab() {
                 <TableCell className="text-sm">{t.subscription_due_date ? new Date(t.subscription_due_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
                 <TableCell><Link to="/loja/$slug" params={{ slug: t.slug }} className="text-xs text-primary hover:underline">/loja/{t.slug}</Link></TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
                   {t.status === "active"
-                    ? <Button size="sm" variant="outline" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
-                    : <Button size="sm" variant="outline" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
+                    ? <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
+                    : <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
                   <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => del(t)}><Trash2 className="size-4" /></Button>
                 </TableCell>
               </TableRow>
@@ -333,6 +352,60 @@ function TenantsTab() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!proofView} onOpenChange={(o) => { if (!o) { setProofView(null); setProofFileUrl(""); } }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          {proofView && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Comprovante — {proofView.none ? proofView.store_name : (proofView.tenants?.store_name || "Loja")}</DialogTitle>
+              </DialogHeader>
+              {proofView.none ? (
+                <div className="grid h-48 place-items-center rounded-md border border-dashed border-border text-muted-foreground">
+                  <div className="text-center">
+                    <Receipt className="mx-auto mb-2 size-10 text-muted-foreground/60" />
+                    <p className="font-medium">Nenhum comprovante enviado por esta loja</p>
+                    <p className="text-sm text-muted-foreground">O lojista ainda não enviou nenhum comprovante de pagamento.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
+                  <div className="space-y-2 text-sm">
+                    <Info label="Status do comprovante" v={proofView.status} />
+                    <Info label="Valor" v={brl(Number(proofView.amount))} />
+                    <Info label="Meses" v={String(proofView.period_months)} />
+                    <Info label="Data de envio" v={new Date(proofView.created_at).toLocaleString("pt-BR")} />
+                    {proofView.notes && <Info label="Observação" v={proofView.notes} />}
+                  </div>
+                  <div className="space-y-2">
+                    {proofFileUrl ? (
+                      <>
+                        {proofView.file_type === "image" ? (
+                          <a href={proofFileUrl} target="_blank" rel="noreferrer">
+                            <img src={proofFileUrl} alt="comprovante" className="w-full rounded-md border border-border" />
+                          </a>
+                        ) : proofView.file_type === "pdf" ? (
+                          <iframe src={proofFileUrl} className="h-72 w-full rounded-md border border-border" title="comprovante" />
+                        ) : (
+                          <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Pré-visualização indisponível — use os botões abaixo</div>
+                        )}
+                        <div className="flex gap-2">
+                          <a href={proofFileUrl} target="_blank" rel="noreferrer" className="flex-1">
+                            <Button variant="outline" className="w-full"><ExternalLink className="mr-2 size-4" />Abrir em nova aba</Button>
+                          </a>
+                          <a href={proofFileUrl} download className="flex-1">
+                            <Button variant="outline" className="w-full">Baixar</Button>
+                          </a>
+                        </div>
+                      </>
+                    ) : <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Sem arquivo</div>}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
