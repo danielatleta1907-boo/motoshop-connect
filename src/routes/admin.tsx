@@ -17,7 +17,7 @@ import { SubscribeDialog } from "@/components/SubscribeDialog";
 import {
   LogOut, Plus, Edit2, Trash2, Upload, ImagePlus, X, FileText,
   TrendingUp, Bike, Users, CheckCircle2, DollarSign, Settings as Cog,
-  Clock, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw,
+  Clock, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw, Share2, Copy, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
