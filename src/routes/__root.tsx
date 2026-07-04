@@ -78,14 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "MotoStore SaaS — Sistema completo para concessionárias de motos" },
+      { name: "description", content: "Plataforma profissional para lojas de motos: catálogo online, vendas, comprovantes, dashboard financeiro e WhatsApp integrado. R$ 65,90/mês." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "MotoStore SaaS — Sistema completo para concessionárias de motos" },
+      { property: "og:description", content: "Plataforma profissional para lojas de motos: catálogo online, vendas, comprovantes, dashboard financeiro e WhatsApp integrado. R$ 65,90/mês." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MotoStore SaaS — Sistema completo para concessionárias de motos" },
+      { name: "twitter:description", content: "Plataforma profissional para lojas de motos: catálogo online, vendas, comprovantes, dashboard financeiro e WhatsApp integrado. R$ 65,90/mês." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cf9854ac-b499-486e-b6da-73c1f8b3fa04" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cf9854ac-b499-486e-b6da-73c1f8b3fa04" },
     ],
     links: [
       {
