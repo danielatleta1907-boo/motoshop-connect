@@ -442,6 +442,41 @@ function TenantsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setNewPw(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Definir nova senha — {pwTarget?.store_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <strong className="text-foreground">Atenção:</strong> por segurança nenhuma senha fica armazenada legível — nem para o super admin. Ao definir uma nova senha aqui, ela substitui a atual. Repasse ao lojista por um canal seguro e oriente-o a trocar no primeiro acesso.
+            </div>
+            <div>
+              <Label>Dono</Label>
+              <div className="text-sm">{pwTarget?.profiles?.full_name} <span className="text-muted-foreground">({pwTarget?.profiles?.email})</span></div>
+            </div>
+            <div>
+              <Label htmlFor="np">Nova senha (mín. 8 caracteres)</Label>
+              <Input id="np" type="text" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Digite ou cole uma senha forte" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const bytes = new Uint8Array(12);
+                crypto.getRandomValues(bytes);
+                const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%";
+                setNewPw(Array.from(bytes, (b) => chars[b % chars.length]).join(""));
+              }}
+            >Gerar senha aleatória</Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setPwTarget(null); setNewPw(""); }}>Cancelar</Button>
+            <Button onClick={submitNewPw} disabled={pwBusy || newPw.length < 8}>{pwBusy ? "Salvando…" : "Salvar nova senha"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
