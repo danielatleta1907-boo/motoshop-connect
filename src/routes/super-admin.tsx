@@ -376,6 +376,8 @@ function TenantsTab() {
                 <TableCell><Link to="/loja/$slug" params={{ slug: t.slug }} className="text-xs text-primary hover:underline">/loja/{t.slug}</Link></TableCell>
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
+                  <Button size="sm" variant="outline" className="ml-1" onClick={() => resetPw(t)}><Mail className="mr-1 size-3.5" />Redefinir senha</Button>
+                  <Button size="sm" variant="outline" className="ml-1" onClick={() => { setPwTarget(t); setNewPw(""); }}><KeyRound className="mr-1 size-3.5" />Nova senha</Button>
                   {t.status === "active"
                     ? <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
                     : <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
