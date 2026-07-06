@@ -864,6 +864,58 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
+      <div className="space-y-4 rounded-xl border border-border bg-card p-5 lg:col-span-2">
+        <h3 className="font-bold">Paleta de cores da loja</h3>
+        <p className="text-sm text-muted-foreground">Escolha a cor principal que aparecerá no site público da sua loja (botões, destaques e banner).</p>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { name: "Verde lima", value: "#84cc16" },
+            { name: "Azul oceano", value: "#2563eb" },
+            { name: "Roxo real", value: "#7c3aed" },
+            { name: "Rosa vibrante", value: "#ec4899" },
+            { name: "Vermelho fogo", value: "#dc2626" },
+            { name: "Laranja pôr do sol", value: "#f97316" },
+            { name: "Âmbar dourado", value: "#f59e0b" },
+            { name: "Esmeralda", value: "#10b981" },
+            { name: "Ciano", value: "#06b6d4" },
+            { name: "Índigo", value: "#4f46e5" },
+            { name: "Grafite", value: "#334155" },
+            { name: "Preto premium", value: "#0f172a" },
+          ].map((c) => {
+            const active = (s.theme_color || "").toLowerCase() === c.value.toLowerCase();
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setS({ ...s, theme_color: c.value })}
+                title={c.name}
+                className={`h-12 w-12 rounded-full border-2 shadow-soft transition-transform hover:scale-110 ${active ? "border-foreground ring-2 ring-offset-2 ring-foreground" : "border-border"}`}
+                style={{ backgroundColor: c.value }}
+                aria-label={c.name}
+              />
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-3">
+          <Label>Ou personalize:</Label>
+          <input
+            type="color"
+            value={s.theme_color || "#84cc16"}
+            onChange={(e) => setS({ ...s, theme_color: e.target.value })}
+            className="h-10 w-16 cursor-pointer rounded border border-border bg-transparent"
+          />
+          <Input
+            value={s.theme_color || ""}
+            onChange={(e) => setS({ ...s, theme_color: e.target.value })}
+            placeholder="#84cc16"
+            className="max-w-[160px] font-mono"
+          />
+          {s.theme_color && (
+            <Button variant="ghost" size="sm" onClick={() => setS({ ...s, theme_color: null })}>Limpar</Button>
+          )}
+        </div>
+      </div>
+
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">{saving ? "Salvando…" : "Salvar tudo"}</Button>
       </div>
