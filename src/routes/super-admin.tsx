@@ -323,6 +323,33 @@ function TenantsTab() {
     toast.success("Loja removida"); load();
   }
 
+  async function resetPw(t: any) {
+    const email = t.profiles?.email;
+    if (!email) return toast.error("Este dono não tem e-mail cadastrado");
+    if (!confirm(`Enviar e-mail de redefinição de senha para ${email}?`)) return;
+    try {
+      await sendReset({ data: { email, redirectTo: `${window.location.origin}/reset-password` } });
+      toast.success(`E-mail enviado para ${email}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao enviar");
+    }
+  }
+
+  async function submitNewPw() {
+    if (!pwTarget) return;
+    if (newPw.length < 8) return toast.error("A senha precisa ter ao menos 8 caracteres");
+    setPwBusy(true);
+    try {
+      await setPw({ data: { userId: pwTarget.owner_id, password: newPw } });
+      toast.success("Senha atualizada. Repasse-a com segurança ao lojista e peça que ele troque no primeiro acesso.");
+      setPwTarget(null); setNewPw("");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao definir senha");
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-4 text-xl font-bold">Lojas ({list.length})</h2>
