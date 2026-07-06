@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { brl } from "@/lib/format";
+import { sendPasswordReset, setUserPassword } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   ShieldCheck, LogOut, Inbox, Check, X as XIcon, FileText, Store, RefreshCw,
-  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt,
+  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt, KeyRound, Mail,
 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
