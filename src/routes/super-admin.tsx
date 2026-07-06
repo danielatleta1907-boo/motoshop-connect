@@ -275,6 +275,11 @@ function TenantsTab() {
   const [list, setList] = useState<any[]>([]);
   const [proofView, setProofView] = useState<any | null>(null);
   const [proofFileUrl, setProofFileUrl] = useState<string>("");
+  const [pwTarget, setPwTarget] = useState<any | null>(null);
+  const [newPw, setNewPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const sendReset = useServerFn(sendPasswordReset);
+  const setPw = useServerFn(setUserPassword);
 
   async function load() {
     const { data } = await supabase
