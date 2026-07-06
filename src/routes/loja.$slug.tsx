@@ -82,8 +82,12 @@ function PublicStore() {
     );
   }
 
+  const themeStyle = (settings as any)?.theme_color
+    ? ({ ["--primary" as any]: (settings as any).theme_color, ["--ring" as any]: (settings as any).theme_color, ["--color-primary" as any]: (settings as any).theme_color, ["--color-ring" as any]: (settings as any).theme_color } as React.CSSProperties)
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={themeStyle}>
       <SiteHeader settings={settings} slug={slug} />
 
       <section className="bg-hero text-white">
