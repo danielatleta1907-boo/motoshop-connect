@@ -82,7 +82,6 @@ function PublicStore() {
     );
   }
 
-  return (
   const themeStyle = (settings as any)?.theme_color
     ? ({ ["--primary" as any]: (settings as any).theme_color, ["--ring" as any]: (settings as any).theme_color, ["--color-primary" as any]: (settings as any).theme_color, ["--color-ring" as any]: (settings as any).theme_color } as React.CSSProperties)
     : undefined;
