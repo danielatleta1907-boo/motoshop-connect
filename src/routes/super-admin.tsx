@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { brl } from "@/lib/format";
+import { sendPasswordReset, setUserPassword } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   ShieldCheck, LogOut, Inbox, Check, X as XIcon, FileText, Store, RefreshCw,
-  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt,
+  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt, KeyRound, Mail,
 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
@@ -273,6 +275,11 @@ function TenantsTab() {
   const [list, setList] = useState<any[]>([]);
   const [proofView, setProofView] = useState<any | null>(null);
   const [proofFileUrl, setProofFileUrl] = useState<string>("");
+  const [pwTarget, setPwTarget] = useState<any | null>(null);
+  const [newPw, setNewPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const sendReset = useServerFn(sendPasswordReset);
+  const setPw = useServerFn(setUserPassword);
 
   async function load() {
     const { data } = await supabase
@@ -316,6 +323,33 @@ function TenantsTab() {
     toast.success("Loja removida"); load();
   }
 
+  async function resetPw(t: any) {
+    const email = t.profiles?.email;
+    if (!email) return toast.error("Este dono não tem e-mail cadastrado");
+    if (!confirm(`Enviar e-mail de redefinição de senha para ${email}?`)) return;
+    try {
+      await sendReset({ data: { email, redirectTo: `${window.location.origin}/reset-password` } });
+      toast.success(`E-mail enviado para ${email}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao enviar");
+    }
+  }
+
+  async function submitNewPw() {
+    if (!pwTarget) return;
+    if (newPw.length < 8) return toast.error("A senha precisa ter ao menos 8 caracteres");
+    setPwBusy(true);
+    try {
+      await setPw({ data: { userId: pwTarget.owner_id, password: newPw } });
+      toast.success("Senha atualizada. Repasse-a com segurança ao lojista e peça que ele troque no primeiro acesso.");
+      setPwTarget(null); setNewPw("");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao definir senha");
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-4 text-xl font-bold">Lojas ({list.length})</h2>
@@ -342,6 +376,8 @@ function TenantsTab() {
                 <TableCell><Link to="/loja/$slug" params={{ slug: t.slug }} className="text-xs text-primary hover:underline">/loja/{t.slug}</Link></TableCell>
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
+                  <Button size="sm" variant="outline" className="ml-1" onClick={() => resetPw(t)}><Mail className="mr-1 size-3.5" />Redefinir senha</Button>
+                  <Button size="sm" variant="outline" className="ml-1" onClick={() => { setPwTarget(t); setNewPw(""); }}><KeyRound className="mr-1 size-3.5" />Nova senha</Button>
                   {t.status === "active"
                     ? <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
                     : <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
@@ -404,6 +440,41 @@ function TenantsTab() {
               )}
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setNewPw(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Definir nova senha — {pwTarget?.store_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <strong className="text-foreground">Atenção:</strong> por segurança nenhuma senha fica armazenada legível — nem para o super admin. Ao definir uma nova senha aqui, ela substitui a atual. Repasse ao lojista por um canal seguro e oriente-o a trocar no primeiro acesso.
+            </div>
+            <div>
+              <Label>Dono</Label>
+              <div className="text-sm">{pwTarget?.profiles?.full_name} <span className="text-muted-foreground">({pwTarget?.profiles?.email})</span></div>
+            </div>
+            <div>
+              <Label htmlFor="np">Nova senha (mín. 8 caracteres)</Label>
+              <Input id="np" type="text" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Digite ou cole uma senha forte" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const bytes = new Uint8Array(12);
+                crypto.getRandomValues(bytes);
+                const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%";
+                setNewPw(Array.from(bytes, (b) => chars[b % chars.length]).join(""));
+              }}
+            >Gerar senha aleatória</Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setPwTarget(null); setNewPw(""); }}>Cancelar</Button>
+            <Button onClick={submitNewPw} disabled={pwBusy || newPw.length < 8}>{pwBusy ? "Salvando…" : "Salvar nova senha"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
