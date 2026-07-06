@@ -806,6 +806,7 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       whatsapp: s.whatsapp, phone: s.phone, email: s.email,
       instagram: s.instagram, facebook: s.facebook,
       business_hours: s.business_hours, about: s.about,
+      theme_color: s.theme_color || null,
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
