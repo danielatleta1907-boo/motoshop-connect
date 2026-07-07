@@ -31,7 +31,7 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
   }, [settings?.logo_url]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md" style={headerStyle}>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link to={slug ? "/loja/$slug" : "/"} params={slug ? { slug } : undefined as any} className="flex items-center gap-3">
           {logoSrc ? (
