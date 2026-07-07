@@ -78,7 +78,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
     ["sex", "Sexta"], ["sab", "Sábado"], ["dom", "Domingo"],
   ];
   return (
-    <footer className="mt-20 border-t border-border bg-secondary text-secondary-foreground">
+    <footer className="mt-20 border-t border-border bg-secondary text-secondary-foreground" style={footerStyle}>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-3">
         <div>
           <div className="text-lg font-bold">{settings.store_name}</div>
