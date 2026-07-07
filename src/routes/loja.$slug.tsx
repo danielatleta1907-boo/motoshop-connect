@@ -82,15 +82,16 @@ function PublicStore() {
     );
   }
 
-  const themeStyle = (settings as any)?.theme_color
-    ? ({ ["--primary" as any]: (settings as any).theme_color, ["--ring" as any]: (settings as any).theme_color, ["--color-primary" as any]: (settings as any).theme_color, ["--color-ring" as any]: (settings as any).theme_color } as React.CSSProperties)
-    : undefined;
+  const themeStyle = buildThemeStyle((settings as any)?.theme_color);
+  const heroStyle: React.CSSProperties = themeStyle
+    ? { background: `linear-gradient(140deg, ${shade((settings as any).theme_color, -55)} 0%, ${shade((settings as any).theme_color, -30)} 60%, ${(settings as any).theme_color} 100%)` }
+    : {};
 
   return (
-    <div className="min-h-screen bg-background" style={themeStyle}>
+    <div className="min-h-screen bg-background text-foreground" style={themeStyle}>
       <SiteHeader settings={settings} slug={slug} />
 
-      <section className="bg-hero text-white">
+      <section className="text-white" style={heroStyle}>
         <div className="mx-auto max-w-7xl px-4 py-16 md:py-24">
           <div className="max-w-2xl">
             <div className="mb-3 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
