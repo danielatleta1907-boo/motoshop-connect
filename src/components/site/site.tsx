@@ -23,7 +23,7 @@ export type StoreSettings = {
   about: string | null;
 };
 
-export function SiteHeader({ settings, slug }: { settings: StoreSettings | null; slug?: string }) {
+export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { settings: StoreSettings | null; slug?: string; headerStyle?: React.CSSProperties; buttonColor?: string }) {
   const [logoSrc, setLogoSrc] = useState<string>("");
   useEffect(() => {
     if (settings?.logo_url) signedUrl("store-assets", settings.logo_url).then(setLogoSrc);
@@ -31,7 +31,7 @@ export function SiteHeader({ settings, slug }: { settings: StoreSettings | null;
   }, [settings?.logo_url]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md" style={headerStyle}>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link to={slug ? "/loja/$slug" : "/"} params={slug ? { slug } : undefined as any} className="flex items-center gap-3">
           {logoSrc ? (
@@ -52,9 +52,10 @@ export function SiteHeader({ settings, slug }: { settings: StoreSettings | null;
               href={`https://wa.me/${waNumber(settings.whatsapp)}`}
               target="_blank"
               rel="noreferrer"
-              className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted md:inline-flex"
+              style={buttonColor ? { backgroundColor: buttonColor, color: "#fff", borderColor: buttonColor } : undefined}
+              className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90 md:inline-flex"
             >
-              <Phone className="size-4 text-primary" /> WhatsApp
+              <Phone className="size-4" style={buttonColor ? { color: "#fff" } : undefined} /> WhatsApp
             </a>
           )}
           <Link
@@ -69,7 +70,7 @@ export function SiteHeader({ settings, slug }: { settings: StoreSettings | null;
   );
 }
 
-export function SiteFooter({ settings }: { settings: StoreSettings | null }) {
+export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings | null; footerStyle?: React.CSSProperties }) {
   if (!settings) return null;
   const hours = settings.business_hours || {};
   const days: [string, string][] = [
@@ -77,7 +78,7 @@ export function SiteFooter({ settings }: { settings: StoreSettings | null }) {
     ["sex", "Sexta"], ["sab", "Sábado"], ["dom", "Domingo"],
   ];
   return (
-    <footer className="mt-20 border-t border-border bg-secondary text-secondary-foreground">
+    <footer className="mt-20 border-t border-border bg-secondary text-secondary-foreground" style={footerStyle}>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-3">
         <div>
           <div className="text-lg font-bold">{settings.store_name}</div>

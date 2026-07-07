@@ -810,6 +810,10 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       theme_bg: s.theme_bg || null,
       theme_text: s.theme_text || null,
       theme_card: s.theme_card || null,
+      theme_button: s.theme_button || null,
+      theme_hero: s.theme_hero || null,
+      theme_header: s.theme_header || null,
+      theme_footer: s.theme_footer || null,
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -923,6 +927,10 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
             { key: "theme_bg", label: "Cor de fundo da loja", def: "#ffffff" },
             { key: "theme_text", label: "Cor dos textos", def: "#0f172a" },
             { key: "theme_card", label: "Cor dos cards / caixas", def: "#ffffff" },
+            { key: "theme_button", label: "Cor dos botões (WhatsApp, etc.)", def: "#25d366" },
+            { key: "theme_hero", label: "Cor do banner (topo)", def: "#0f172a" },
+            { key: "theme_header", label: "Cor do cabeçalho", def: "#ffffff" },
+            { key: "theme_footer", label: "Cor do rodapé", def: "#0f172a" },
           ] as const).map((f) => (
             <div key={f.key} className="space-y-2">
               <Label>{f.label}</Label>
