@@ -41,16 +41,19 @@ export function readableOn(hex: string): string {
   return luminance(hex) > 0.5 ? "#0f172a" : "#ffffff";
 }
 
-export function buildThemeStyle(hex?: string | null): React.CSSProperties | undefined {
-  if (!hex) return undefined;
-  const primary = hex;
+export function buildThemeStyle(
+  hex?: string | null,
+  overrides?: { bg?: string | null; text?: string | null; card?: string | null },
+): React.CSSProperties | undefined {
+  if (!hex && !overrides?.bg && !overrides?.text && !overrides?.card) return undefined;
+  const primary = hex || "#84cc16";
   const primaryFg = readableOn(primary);
-  const background = shade(primary, 92); // very light tint of the brand
-  const card = shade(primary, 96);
-  const foreground = shade(primary, -75); // very dark tint for text
-  const muted = shade(primary, 88);
-  const mutedFg = shade(primary, -45);
-  const border = shade(primary, 78);
+  const background = overrides?.bg || shade(primary, 92);
+  const card = overrides?.card || shade(primary, 96);
+  const foreground = overrides?.text || shade(primary, -75);
+  const muted = shade(background, -8);
+  const mutedFg = shade(foreground, 35);
+  const border = shade(background, -15);
   const secondary = shade(primary, -60);
   const secondaryFg = shade(primary, 95);
   const accent = shade(primary, 70);
