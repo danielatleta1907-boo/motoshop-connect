@@ -917,6 +917,36 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
             <Button variant="ghost" size="sm" onClick={() => setS({ ...s, theme_color: null })}>Limpar</Button>
           )}
         </div>
+
+        <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
+          {([
+            { key: "theme_bg", label: "Cor de fundo da loja", def: "#ffffff" },
+            { key: "theme_text", label: "Cor dos textos", def: "#0f172a" },
+            { key: "theme_card", label: "Cor dos cards / caixas", def: "#ffffff" },
+          ] as const).map((f) => (
+            <div key={f.key} className="space-y-2">
+              <Label>{f.label}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={(s as any)[f.key] || f.def}
+                  onChange={(e) => setS({ ...s, [f.key]: e.target.value })}
+                  className="h-10 w-14 cursor-pointer rounded border border-border bg-transparent"
+                />
+                <Input
+                  value={(s as any)[f.key] || ""}
+                  onChange={(e) => setS({ ...s, [f.key]: e.target.value })}
+                  placeholder={f.def}
+                  className="font-mono"
+                />
+                {(s as any)[f.key] && (
+                  <Button variant="ghost" size="sm" onClick={() => setS({ ...s, [f.key]: null })}>×</Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Deixe em branco para usar as cores derivadas automaticamente da cor principal.</p>
       </div>
 
       <div className="lg:col-span-2 flex justify-end">
