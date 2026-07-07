@@ -810,6 +810,10 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       theme_bg: s.theme_bg || null,
       theme_text: s.theme_text || null,
       theme_card: s.theme_card || null,
+      theme_button: s.theme_button || null,
+      theme_hero: s.theme_hero || null,
+      theme_header: s.theme_header || null,
+      theme_footer: s.theme_footer || null,
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
