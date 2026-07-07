@@ -70,7 +70,7 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
   );
 }
 
-export function SiteFooter({ settings }: { settings: StoreSettings | null }) {
+export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings | null; footerStyle?: React.CSSProperties }) {
   if (!settings) return null;
   const hours = settings.business_hours || {};
   const days: [string, string][] = [
