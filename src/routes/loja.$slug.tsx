@@ -83,20 +83,27 @@ function PublicStore() {
     );
   }
 
-  const themeStyle = buildThemeStyle((settings as any)?.theme_color, {
-    bg: (settings as any)?.theme_bg,
-    text: (settings as any)?.theme_text,
-    card: (settings as any)?.theme_card,
+  const s: any = settings || {};
+  const themeStyle = buildThemeStyle(s.theme_color, {
+    bg: s.theme_bg, text: s.theme_text, card: s.theme_card,
   });
-  const heroStyle: React.CSSProperties = themeStyle
-    ? { background: `linear-gradient(140deg, ${shade((settings as any).theme_color, -55)} 0%, ${shade((settings as any).theme_color, -30)} 60%, ${(settings as any).theme_color} 100%)` }
+  const heroColor = s.theme_hero || s.theme_color;
+  const heroStyle: React.CSSProperties = heroColor
+    ? { background: `linear-gradient(140deg, ${shade(heroColor, -40)} 0%, ${shade(heroColor, -15)} 60%, ${heroColor} 100%)`, color: readableOn(heroColor) }
     : {};
+  const headerStyle: React.CSSProperties | undefined = s.theme_header
+    ? { backgroundColor: s.theme_header, color: readableOn(s.theme_header) }
+    : undefined;
+  const footerStyle: React.CSSProperties | undefined = s.theme_footer
+    ? { backgroundColor: s.theme_footer, color: readableOn(s.theme_footer) }
+    : undefined;
+  const buttonColor: string | undefined = s.theme_button || undefined;
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={themeStyle}>
-      <SiteHeader settings={settings} slug={slug} />
+      <SiteHeader settings={settings} slug={slug} headerStyle={headerStyle} buttonColor={buttonColor} />
 
-      <section className="text-white" style={heroStyle}>
+      <section style={heroStyle}>
         <div className="mx-auto max-w-7xl px-4 py-16 md:py-24">
           <div className="max-w-2xl">
             <div className="mb-3 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
