@@ -52,9 +52,10 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
               href={`https://wa.me/${waNumber(settings.whatsapp)}`}
               target="_blank"
               rel="noreferrer"
-              className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted md:inline-flex"
+              style={buttonColor ? { backgroundColor: buttonColor, color: "#fff", borderColor: buttonColor } : undefined}
+              className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90 md:inline-flex"
             >
-              <Phone className="size-4 text-primary" /> WhatsApp
+              <Phone className="size-4" style={buttonColor ? { color: "#fff" } : undefined} /> WhatsApp
             </a>
           )}
           <Link
