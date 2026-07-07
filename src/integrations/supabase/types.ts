@@ -341,8 +341,12 @@ export type Database = {
           store_name: string
           tenant_id: string
           theme_bg: string | null
+          theme_button: string | null
           theme_card: string | null
           theme_color: string | null
+          theme_footer: string | null
+          theme_header: string | null
+          theme_hero: string | null
           theme_text: string | null
           updated_at: string
           whatsapp: string | null
@@ -362,8 +366,12 @@ export type Database = {
           store_name?: string
           tenant_id: string
           theme_bg?: string | null
+          theme_button?: string | null
           theme_card?: string | null
           theme_color?: string | null
+          theme_footer?: string | null
+          theme_header?: string | null
+          theme_hero?: string | null
           theme_text?: string | null
           updated_at?: string
           whatsapp?: string | null
@@ -383,8 +391,12 @@ export type Database = {
           store_name?: string
           tenant_id?: string
           theme_bg?: string | null
+          theme_button?: string | null
           theme_card?: string | null
           theme_color?: string | null
+          theme_footer?: string | null
+          theme_header?: string | null
+          theme_hero?: string | null
           theme_text?: string | null
           updated_at?: string
           whatsapp?: string | null
