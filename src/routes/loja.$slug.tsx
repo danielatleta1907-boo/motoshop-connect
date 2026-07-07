@@ -154,7 +154,7 @@ function PublicStore() {
         </section>
       )}
 
-      <SiteFooter settings={settings} />
+      <SiteFooter settings={settings} footerStyle={footerStyle} />
     </div>
   );
 }
