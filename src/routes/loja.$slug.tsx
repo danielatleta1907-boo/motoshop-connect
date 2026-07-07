@@ -83,7 +83,11 @@ function PublicStore() {
     );
   }
 
-  const themeStyle = buildThemeStyle((settings as any)?.theme_color);
+  const themeStyle = buildThemeStyle((settings as any)?.theme_color, {
+    bg: (settings as any)?.theme_bg,
+    text: (settings as any)?.theme_text,
+    card: (settings as any)?.theme_card,
+  });
   const heroStyle: React.CSSProperties = themeStyle
     ? { background: `linear-gradient(140deg, ${shade((settings as any).theme_color, -55)} 0%, ${shade((settings as any).theme_color, -30)} 60%, ${(settings as any).theme_color} 100%)` }
     : {};

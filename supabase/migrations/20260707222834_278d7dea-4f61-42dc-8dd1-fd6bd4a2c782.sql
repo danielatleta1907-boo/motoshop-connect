@@ -1,0 +1,4 @@
+ALTER TABLE public.store_settings
+  ADD COLUMN IF NOT EXISTS theme_bg TEXT,
+  ADD COLUMN IF NOT EXISTS theme_text TEXT,
+  ADD COLUMN IF NOT EXISTS theme_card TEXT;

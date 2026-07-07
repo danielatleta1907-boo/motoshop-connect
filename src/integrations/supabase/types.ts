@@ -340,7 +340,10 @@ export type Database = {
           phone: string | null
           store_name: string
           tenant_id: string
+          theme_bg: string | null
+          theme_card: string | null
           theme_color: string | null
+          theme_text: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -358,7 +361,10 @@ export type Database = {
           phone?: string | null
           store_name?: string
           tenant_id: string
+          theme_bg?: string | null
+          theme_card?: string | null
           theme_color?: string | null
+          theme_text?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -376,7 +382,10 @@ export type Database = {
           phone?: string | null
           store_name?: string
           tenant_id?: string
+          theme_bg?: string | null
+          theme_card?: string | null
           theme_color?: string | null
+          theme_text?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
