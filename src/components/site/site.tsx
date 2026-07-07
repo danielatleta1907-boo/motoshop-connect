@@ -23,7 +23,7 @@ export type StoreSettings = {
   about: string | null;
 };
 
-export function SiteHeader({ settings, slug }: { settings: StoreSettings | null; slug?: string }) {
+export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { settings: StoreSettings | null; slug?: string; headerStyle?: React.CSSProperties; buttonColor?: string }) {
   const [logoSrc, setLogoSrc] = useState<string>("");
   useEffect(() => {
     if (settings?.logo_url) signedUrl("store-assets", settings.logo_url).then(setLogoSrc);
