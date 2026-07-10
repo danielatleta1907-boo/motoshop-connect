@@ -922,7 +922,7 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
           )}
         </div>
 
-        <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
           {([
             { key: "theme_bg", label: "Cor de fundo da loja", def: "#ffffff" },
             { key: "theme_text", label: "Cor dos textos", def: "#0f172a" },
@@ -932,26 +932,13 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
             { key: "theme_header", label: "Cor do cabeçalho", def: "#ffffff" },
             { key: "theme_footer", label: "Cor do rodapé", def: "#0f172a" },
           ] as const).map((f) => (
-            <div key={f.key} className="space-y-2">
-              <Label>{f.label}</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={(s as any)[f.key] || f.def}
-                  onChange={(e) => setS({ ...s, [f.key]: e.target.value })}
-                  className="h-10 w-14 cursor-pointer rounded border border-border bg-transparent"
-                />
-                <Input
-                  value={(s as any)[f.key] || ""}
-                  onChange={(e) => setS({ ...s, [f.key]: e.target.value })}
-                  placeholder={f.def}
-                  className="font-mono"
-                />
-                {(s as any)[f.key] && (
-                  <Button variant="ghost" size="sm" onClick={() => setS({ ...s, [f.key]: null })}>×</Button>
-                )}
-              </div>
-            </div>
+            <ThemeColorField
+              key={f.key}
+              label={f.label}
+              def={f.def}
+              value={(s as any)[f.key] || ""}
+              onChange={(v) => setS({ ...s, [f.key]: v })}
+            />
           ))}
         </div>
         <p className="text-xs text-muted-foreground">Deixe em branco para usar as cores derivadas automaticamente da cor principal.</p>
@@ -960,6 +947,103 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">{saving ? "Salvando…" : "Salvar tudo"}</Button>
       </div>
+    </div>
+  );
+}
+
+function parseGradient(v: string): { c1: string; c2: string; angle: number } | null {
+  const m = v.match(/linear-gradient\(\s*(-?\d+)deg\s*,\s*(#[0-9a-fA-F]{3,8})\s*,\s*(#[0-9a-fA-F]{3,8})\s*\)/);
+  if (!m) return null;
+  return { angle: parseInt(m[1], 10), c1: m[2], c2: m[3] };
+}
+
+function ThemeColorField({
+  label, def, value, onChange,
+}: { label: string; def: string; value: string; onChange: (v: string | null) => void }) {
+  const grad = parseGradient(value);
+  const isGrad = !!grad;
+  const [angle, setAngle] = useState<number>(grad?.angle ?? 135);
+  const [c1, setC1] = useState<string>(grad?.c1 ?? (value.startsWith("#") ? value : def));
+  const [c2, setC2] = useState<string>(grad?.c2 ?? def);
+
+  useEffect(() => {
+    if (isGrad && grad) { setAngle(grad.angle); setC1(grad.c1); setC2(grad.c2); }
+  }, [value]);
+
+  const toggleGradient = () => {
+    if (isGrad) {
+      onChange(c1);
+    } else {
+      const first = value.startsWith("#") ? value : def;
+      setC1(first);
+      onChange(`linear-gradient(${angle}deg, ${first}, ${c2})`);
+    }
+  };
+
+  const updateGrad = (nA: number, nC1: string, nC2: string) => {
+    setAngle(nA); setC1(nC1); setC2(nC2);
+    onChange(`linear-gradient(${nA}deg, ${nC1}, ${nC2})`);
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border/60 p-3">
+      <div className="flex items-center justify-between">
+        <Label>{label}</Label>
+        <Button
+          type="button"
+          variant={isGrad ? "default" : "outline"}
+          size="sm"
+          onClick={toggleGradient}
+          className={isGrad ? "bg-brand text-primary-foreground hover:opacity-90" : ""}
+        >
+          {isGrad ? "Degradê ativo" : "Degradê"}
+        </Button>
+      </div>
+
+      <div className="h-8 w-full rounded border border-border" style={{ background: value || def }} />
+
+      {!isGrad ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={value || def}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-10 w-14 cursor-pointer rounded border border-border bg-transparent"
+          />
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value || null)}
+            placeholder={def}
+            className="font-mono"
+          />
+          {value && (
+            <Button variant="ghost" size="sm" onClick={() => onChange(null)}>×</Button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Cor 1</span>
+            <input type="color" value={c1} onChange={(e) => updateGrad(angle, e.target.value, c2)} className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent" />
+            <Input value={c1} onChange={(e) => updateGrad(angle, e.target.value, c2)} className="font-mono" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Cor 2</span>
+            <input type="color" value={c2} onChange={(e) => updateGrad(angle, c1, e.target.value)} className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent" />
+            <Input value={c2} onChange={(e) => updateGrad(angle, c1, e.target.value)} className="font-mono" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Ângulo</span>
+            <input
+              type="range" min={0} max={360} value={angle}
+              onChange={(e) => updateGrad(parseInt(e.target.value, 10), c1, c2)}
+              className="flex-1"
+            />
+            <span className="w-12 text-right font-mono text-xs">{angle}°</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Limpar</Button>
+        </div>
+      )}
     </div>
   );
 }

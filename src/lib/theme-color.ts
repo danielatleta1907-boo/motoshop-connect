@@ -41,6 +41,17 @@ export function readableOn(hex: string): string {
   return luminance(hex) > 0.5 ? "#0f172a" : "#ffffff";
 }
 
+export function isGradient(v?: string | null): boolean {
+  return !!v && /gradient\(/i.test(v);
+}
+
+// pick first hex inside a gradient string, else return input
+export function firstColorOf(v?: string | null): string | null {
+  if (!v) return null;
+  const m = v.match(/#([0-9a-f]{6}|[0-9a-f]{3})/i);
+  return m ? `#${m[1]}` : v;
+}
+
 export function buildThemeStyle(
   hex?: string | null,
   overrides?: { bg?: string | null; text?: string | null; card?: string | null },
@@ -48,9 +59,13 @@ export function buildThemeStyle(
   if (!hex && !overrides?.bg && !overrides?.text && !overrides?.card) return undefined;
   const primary = hex || "#84cc16";
   const primaryFg = readableOn(primary);
-  const background = overrides?.bg || shade(primary, 92);
-  const card = overrides?.card || shade(primary, 96);
-  const foreground = overrides?.text || shade(primary, -75);
+  // gradients cannot be used as background-color CSS vars; fall back to first color for token derivation
+  const bgSolid = isGradient(overrides?.bg) ? firstColorOf(overrides?.bg)! : overrides?.bg;
+  const cardSolid = isGradient(overrides?.card) ? firstColorOf(overrides?.card)! : overrides?.card;
+  const textSolid = isGradient(overrides?.text) ? firstColorOf(overrides?.text)! : overrides?.text;
+  const background = bgSolid || shade(primary, 92);
+  const card = cardSolid || shade(primary, 96);
+  const foreground = textSolid || shade(primary, -75);
   const muted = shade(background, -8);
   const mutedFg = shade(foreground, 35);
   const border = shade(background, -15);
