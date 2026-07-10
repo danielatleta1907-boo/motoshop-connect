@@ -86,22 +86,41 @@ function PublicStore() {
   const s: any = settings || {};
   const themeStyle = buildThemeStyle(s.theme_color, {
     bg: s.theme_bg, text: s.theme_text, card: s.theme_card,
-  });
-  const heroColor = s.theme_hero || s.theme_color;
-  const heroStyle: React.CSSProperties = heroColor
-    ? { background: `linear-gradient(140deg, ${shade(heroColor, -40)} 0%, ${shade(heroColor, -15)} 60%, ${heroColor} 100%)`, color: readableOn(heroColor) }
-    : {};
+  }) || {};
+  // apply gradient bg on the root wrapper (CSS var can't be a gradient for `background-color`)
+  if (isGradient(s.theme_bg)) (themeStyle as any).background = s.theme_bg;
+
+  const heroRaw = s.theme_hero || s.theme_color;
+  const heroStyle: React.CSSProperties = isGradient(s.theme_hero)
+    ? { background: s.theme_hero, color: readableOn(firstColorOf(s.theme_hero) || "#0f172a") }
+    : heroRaw
+      ? { background: `linear-gradient(140deg, ${shade(heroRaw, -40)} 0%, ${shade(heroRaw, -15)} 60%, ${heroRaw} 100%)`, color: readableOn(heroRaw) }
+      : {};
+
   const headerStyle: React.CSSProperties | undefined = s.theme_header
-    ? { backgroundColor: s.theme_header, color: readableOn(s.theme_header) }
+    ? isGradient(s.theme_header)
+      ? { background: s.theme_header, color: readableOn(firstColorOf(s.theme_header) || "#ffffff") }
+      : { backgroundColor: s.theme_header, color: readableOn(s.theme_header) }
     : undefined;
   const footerStyle: React.CSSProperties | undefined = s.theme_footer
-    ? { backgroundColor: s.theme_footer, color: readableOn(s.theme_footer) }
+    ? isGradient(s.theme_footer)
+      ? { background: s.theme_footer, color: readableOn(firstColorOf(s.theme_footer) || "#0f172a") }
+      : { backgroundColor: s.theme_footer, color: readableOn(s.theme_footer) }
     : undefined;
   const buttonColor: string | undefined = s.theme_button || undefined;
 
+  // gradient card background (applied through data attribute selector)
+  const cardBgOverride = isGradient(s.theme_card) ? s.theme_card : undefined;
+
   return (
     <div className="min-h-screen bg-background text-foreground" style={themeStyle}>
+      {cardBgOverride && (
+        <style>{`[data-store-root] .bg-card{background:${cardBgOverride} !important;}`}</style>
+      )}
+      <div data-store-root>
       <SiteHeader settings={settings} slug={slug} headerStyle={headerStyle} buttonColor={buttonColor} />
+
+
 
       <section style={heroStyle}>
         <div className="mx-auto max-w-7xl px-4 py-16 md:py-24">
