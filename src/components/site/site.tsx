@@ -47,17 +47,25 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
           </div>
         </Link>
         <div className="flex items-center gap-2">
-          {settings?.whatsapp && (
-            <a
-              href={`https://wa.me/${waNumber(settings.whatsapp)}`}
-              target="_blank"
-              rel="noreferrer"
-              style={buttonColor ? { backgroundColor: buttonColor, color: "#fff", borderColor: buttonColor } : undefined}
-              className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90 md:inline-flex"
-            >
-              <Phone className="size-4" style={buttonColor ? { color: "#fff" } : undefined} /> WhatsApp
-            </a>
-          )}
+          {settings?.whatsapp && (() => {
+            const isGrad = !!buttonColor && /gradient\(/i.test(buttonColor);
+            const style = buttonColor
+              ? isGrad
+                ? { background: buttonColor, color: "#fff", borderColor: "transparent" }
+                : { backgroundColor: buttonColor, color: "#fff", borderColor: buttonColor }
+              : undefined;
+            return (
+              <a
+                href={`https://wa.me/${waNumber(settings.whatsapp)}`}
+                target="_blank"
+                rel="noreferrer"
+                style={style}
+                className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90 md:inline-flex"
+              >
+                <Phone className="size-4" style={buttonColor ? { color: "#fff" } : undefined} /> WhatsApp
+              </a>
+            );
+          })()}
           <Link
             to="/auth"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
