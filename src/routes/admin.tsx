@@ -950,3 +950,100 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
     </div>
   );
 }
+
+function parseGradient(v: string): { c1: string; c2: string; angle: number } | null {
+  const m = v.match(/linear-gradient\(\s*(-?\d+)deg\s*,\s*(#[0-9a-fA-F]{3,8})\s*,\s*(#[0-9a-fA-F]{3,8})\s*\)/);
+  if (!m) return null;
+  return { angle: parseInt(m[1], 10), c1: m[2], c2: m[3] };
+}
+
+function ThemeColorField({
+  label, def, value, onChange,
+}: { label: string; def: string; value: string; onChange: (v: string | null) => void }) {
+  const grad = parseGradient(value);
+  const isGrad = !!grad;
+  const [angle, setAngle] = useState<number>(grad?.angle ?? 135);
+  const [c1, setC1] = useState<string>(grad?.c1 ?? (value.startsWith("#") ? value : def));
+  const [c2, setC2] = useState<string>(grad?.c2 ?? def);
+
+  useEffect(() => {
+    if (isGrad && grad) { setAngle(grad.angle); setC1(grad.c1); setC2(grad.c2); }
+  }, [value]);
+
+  const toggleGradient = () => {
+    if (isGrad) {
+      onChange(c1);
+    } else {
+      const first = value.startsWith("#") ? value : def;
+      setC1(first);
+      onChange(`linear-gradient(${angle}deg, ${first}, ${c2})`);
+    }
+  };
+
+  const updateGrad = (nA: number, nC1: string, nC2: string) => {
+    setAngle(nA); setC1(nC1); setC2(nC2);
+    onChange(`linear-gradient(${nA}deg, ${nC1}, ${nC2})`);
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border/60 p-3">
+      <div className="flex items-center justify-between">
+        <Label>{label}</Label>
+        <Button
+          type="button"
+          variant={isGrad ? "default" : "outline"}
+          size="sm"
+          onClick={toggleGradient}
+          className={isGrad ? "bg-brand text-primary-foreground hover:opacity-90" : ""}
+        >
+          {isGrad ? "Degradê ativo" : "Degradê"}
+        </Button>
+      </div>
+
+      <div className="h-8 w-full rounded border border-border" style={{ background: value || def }} />
+
+      {!isGrad ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={value || def}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-10 w-14 cursor-pointer rounded border border-border bg-transparent"
+          />
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value || null)}
+            placeholder={def}
+            className="font-mono"
+          />
+          {value && (
+            <Button variant="ghost" size="sm" onClick={() => onChange(null)}>×</Button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Cor 1</span>
+            <input type="color" value={c1} onChange={(e) => updateGrad(angle, e.target.value, c2)} className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent" />
+            <Input value={c1} onChange={(e) => updateGrad(angle, e.target.value, c2)} className="font-mono" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Cor 2</span>
+            <input type="color" value={c2} onChange={(e) => updateGrad(angle, c1, e.target.value)} className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent" />
+            <Input value={c2} onChange={(e) => updateGrad(angle, c1, e.target.value)} className="font-mono" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-14 text-xs text-muted-foreground">Ângulo</span>
+            <input
+              type="range" min={0} max={360} value={angle}
+              onChange={(e) => updateGrad(parseInt(e.target.value, 10), c1, c2)}
+              className="flex-1"
+            />
+            <span className="w-12 text-right font-mono text-xs">{angle}°</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Limpar</Button>
+        </div>
+      )}
+    </div>
+  );
+}
