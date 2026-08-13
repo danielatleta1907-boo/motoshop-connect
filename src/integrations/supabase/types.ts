@@ -53,17 +53,22 @@ export type Database = {
           cost_price: number | null
           created_at: string
           description: string | null
+          gender: string | null
+          gift: string | null
           id: string
           installment_count: number | null
-          km: number
+          km: number | null
+          material: string | null
           model: string
+          piece_type: string | null
           price_cash: number
           price_installment: number | null
+          size: string | null
           status: Database["public"]["Enums"]["moto_status"]
           stock_quantity: number
           tenant_id: string | null
           updated_at: string
-          year: number
+          year: number | null
         }
         Insert: {
           brand: string
@@ -71,17 +76,22 @@ export type Database = {
           cost_price?: number | null
           created_at?: string
           description?: string | null
+          gender?: string | null
+          gift?: string | null
           id?: string
           installment_count?: number | null
-          km?: number
+          km?: number | null
+          material?: string | null
           model: string
+          piece_type?: string | null
           price_cash: number
           price_installment?: number | null
+          size?: string | null
           status?: Database["public"]["Enums"]["moto_status"]
           stock_quantity?: number
           tenant_id?: string | null
           updated_at?: string
-          year: number
+          year?: number | null
         }
         Update: {
           brand?: string
@@ -89,17 +99,22 @@ export type Database = {
           cost_price?: number | null
           created_at?: string
           description?: string | null
+          gender?: string | null
+          gift?: string | null
           id?: string
           installment_count?: number | null
-          km?: number
+          km?: number | null
+          material?: string | null
           model?: string
+          piece_type?: string | null
           price_cash?: number
           price_installment?: number | null
+          size?: string | null
           status?: Database["public"]["Enums"]["moto_status"]
           stock_quantity?: number
           tenant_id?: string | null
           updated_at?: string
-          year?: number
+          year?: number | null
         }
         Relationships: [
           {
