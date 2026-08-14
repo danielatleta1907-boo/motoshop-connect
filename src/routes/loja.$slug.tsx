@@ -2,7 +2,7 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { SiteHeader, SiteFooter, MotoCard, StoreMap, fetchTenantBySlug, type StoreSettings } from "@/components/site/site";
+import { SiteHeader, SiteFooter, ProductCard, StoreMap, fetchTenantBySlug, type StoreSettings } from "@/components/site/site";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
@@ -152,7 +152,7 @@ function PublicStore() {
           <div className="rounded-xl border border-dashed border-border p-16 text-center text-muted-foreground">Nenhuma moto encontrada.</div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => <MotoCard key={m.id} moto={m} cover={covers[m.id] || ""} slug={slug} />)}
+            {filtered.map((m) => <ProductCard key={m.id} moto={m} cover={covers[m.id] || ""} slug={slug} />)}
           </div>
         )}
       </section>
