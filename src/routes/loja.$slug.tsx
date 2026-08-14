@@ -10,7 +10,16 @@ import { buildThemeStyle, shade, readableOn, isGradient, firstColorOf } from "@/
 
 export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Loja — MotoStore" }] }),
+  head: () => ({
+    meta: [
+      { title: "Vitrine da loja — Use Ame" },
+      { name: "description", content: "Veja as peças disponíveis, tamanhos, brindes, horários e endereço para retirada no local." },
+      { property: "og:title", content: "Vitrine da loja — Use Ame" },
+      { property: "og:description", content: "Peças disponíveis, tamanhos, brindes e retirada no local." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: PublicStore,
 });
 
@@ -19,7 +28,7 @@ function PublicStore() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantStatus, setTenantStatus] = useState<string>("");
   const [settings, setSettings] = useState<StoreSettings | null>(null);
-  const [motos, setMotos] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [covers, setCovers] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [brand, setBrand] = useState("all");
@@ -39,7 +48,7 @@ function PublicStore() {
         .eq("tenant_id", tenant.id)
         .order("created_at", { ascending: false });
       const list = data ?? [];
-      setMotos(list);
+      setItems(list);
       const c: Record<string, string> = {};
       await Promise.all(list.map(async (m: any) => {
         const ph = (m.motorcycle_photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
@@ -50,11 +59,14 @@ function PublicStore() {
     })();
   }, [slug]);
 
-  const brands = useMemo(() => Array.from(new Set(motos.map((m) => m.brand))).sort(), [motos]);
-  const filtered = useMemo(() => motos.filter((m) =>
-    (brand === "all" || m.brand === brand) &&
-    (!q || `${m.brand} ${m.model}`.toLowerCase().includes(q.toLowerCase()))
-  ), [motos, brand, q]);
+  const types = useMemo(
+    () => Array.from(new Set(items.map((m) => m.piece_type).filter(Boolean))).sort() as string[],
+    [items],
+  );
+  const filtered = useMemo(() => items.filter((m) =>
+    (brand === "all" || m.piece_type === brand) &&
+    (!q || `${m.brand ?? ""} ${m.model} ${m.piece_type ?? ""} ${m.size ?? ""}`.toLowerCase().includes(q.toLowerCase()))
+  ), [items, brand, q]);
 
   if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Carregando…</div>;
 
@@ -128,8 +140,8 @@ function PublicStore() {
             <div className="mb-3 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
               {settings?.store_name}
             </div>
-            <h1 className="text-4xl font-extrabold leading-tight md:text-6xl">{settings?.motivational_phrase ?? "Sua próxima aventura começa aqui."}</h1>
-            <p className="mt-4 max-w-xl text-white/80">Motos selecionadas, prontas para rodar. Encomende online, finalize na loja.</p>
+            <h1 className="text-4xl font-extrabold leading-tight md:text-6xl">{settings?.motivational_phrase ?? "Moda que combina com você."}</h1>
+            <p className="mt-4 max-w-xl text-white/80">Peças selecionadas com carinho. Encomende online e retire na loja.</p>
           </div>
         </div>
       </section>
@@ -138,28 +150,28 @@ function PublicStore() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por marca ou modelo…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar por peça, modelo ou tamanho…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
           </div>
           <Select value={brand} onValueChange={setBrand}>
             <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as marcas</SelectItem>
-              {brands.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+              <SelectItem value="all">Todos os tipos de peça</SelectItem>
+              {types.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-16 text-center text-muted-foreground">Nenhuma moto encontrada.</div>
+          <div className="rounded-xl border border-dashed border-border p-16 text-center text-muted-foreground">Nenhuma peça encontrada.</div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => <ProductCard key={m.id} moto={m} cover={covers[m.id] || ""} slug={slug} />)}
+            {filtered.map((m) => <ProductCard key={m.id} item={m} cover={covers[m.id] || ""} slug={slug} />)}
           </div>
         )}
       </section>
 
       {settings?.address && (
         <section className="mx-auto max-w-7xl px-4 py-10">
-          <h2 className="mb-4 text-2xl font-bold">Onde estamos</h2>
+          <h2 className="mb-4 text-2xl font-bold">Onde retirar</h2>
           <div className="grid gap-6 md:grid-cols-2">
             <StoreMap address={settings.address} lat={settings.latitude} lng={settings.longitude} />
             <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
