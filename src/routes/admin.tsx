@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SubscribeDialog } from "@/components/SubscribeDialog";
 import {
   LogOut, Plus, Edit2, Trash2, Upload, ImagePlus, X, FileText,
-  TrendingUp, Bike, Users, CheckCircle2, DollarSign, Settings as Cog,
+  TrendingUp, Shirt, Users, CheckCircle2, DollarSign, Settings as Cog,
   Clock, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw, Share2, Copy, Check,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +26,16 @@ import {
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Painel da loja — MotoStore" }] }),
+  head: () => ({
+    meta: [
+      { title: "Painel da loja — Use Ame" },
+      { name: "description", content: "Gerencie peças, encomendas, vendas, comprovantes e as configurações da sua loja de roupas." },
+      { property: "og:title", content: "Painel da loja — Use Ame" },
+      { property: "og:description", content: "Gerencie peças, encomendas, vendas e configurações da sua loja." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AdminPage,
 });
 
@@ -87,14 +96,13 @@ function AdminPage() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">M</div>
+            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">A</div>
             <div>
               <div className="text-sm font-bold">{tenant.store_name}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <DueBadge tenant={tenant} onRenew={() => setRenewOpen(true)} />
             <ShareStoreButton slug={tenant.slug} name={tenant.store_name} />
             <Link to="/loja/$slug" params={{ slug: tenant.slug }}>
               <Button variant="outline" size="sm"><ExternalLink className="mr-2 size-4" />Ver loja</Button>
@@ -110,7 +118,7 @@ function AdminPage() {
         <Tabs defaultValue="dashboard">
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="dashboard"><TrendingUp className="mr-2 size-4" />Painel</TabsTrigger>
-            <TabsTrigger value="stock"><Bike className="mr-2 size-4" />Estoque</TabsTrigger>
+            <TabsTrigger value="stock"><Shirt className="mr-2 size-4" />Peças</TabsTrigger>
             <TabsTrigger value="leads"><Users className="mr-2 size-4" />Interessados</TabsTrigger>
             <TabsTrigger value="sold"><CheckCircle2 className="mr-2 size-4" />Vendidos</TabsTrigger>
             <TabsTrigger value="receipts"><FileText className="mr-2 size-4" />Comprovantes</TabsTrigger>
@@ -164,21 +172,6 @@ function ShareStoreButton({ slug, name }: { slug: string; name: string }) {
   );
 }
 
-function DueBadge({ tenant, onRenew }: { tenant: any; onRenew: () => void }) {
-  if (!tenant.subscription_due_date) return null;
-  const due = new Date(tenant.subscription_due_date);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const days = Math.ceil((due.getTime() - today.getTime()) / 86400000);
-  const warn = days <= 5;
-  return (
-    <button onClick={onRenew} className={`hidden md:inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold ${warn ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border bg-card text-muted-foreground"}`}>
-      <Clock className="size-3.5" />
-      Assinatura: {due.toLocaleDateString("pt-BR")} {warn ? `(${days}d)` : ""}
-      {warn && <span className="ml-1 underline">Renovar</span>}
-    </button>
-  );
-}
-
 function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => void }) {
   return (
     <div className="grid min-h-screen place-items-center bg-hero p-6 text-center text-white">
@@ -186,10 +179,10 @@ function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => v
         <Clock className="mx-auto mb-3 size-12 text-primary-foreground" />
         <h2 className="text-2xl font-bold">Aguardando aprovação</h2>
         <p className="mt-2 text-white/80">
-          Olá, <strong>{email}</strong>. Seu cadastro foi recebido e está aguardando o super admin validar seu pagamento PIX.
+          Olá, <strong>{email}</strong>. Seu cadastro foi recebido e está aguardando a liberação do administrador.
         </p>
         <p className="mt-3 text-sm text-white/70">
-          Se ainda não enviou o comprovante, volte à tela inicial e clique em <strong>"Assinar"</strong>.
+          A liberação acontece em até <strong>12 horas</strong>. O uso do Use Ame é totalmente gratuito.
         </p>
         <div className="mt-6 flex gap-2">
           <Link to="/" className="flex-1"><Button variant="outline" className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20">Voltar ao site</Button></Link>
@@ -207,12 +200,12 @@ function SuspendedScreen({ tenant, email, onRenew, onSignOut }: any) {
         <AlertTriangle className="mx-auto mb-3 size-12 text-destructive" />
         <h2 className="text-2xl font-bold">Loja suspensa</h2>
         <p className="mt-2 text-muted-foreground">
-          A loja <strong>{tenant.store_name}</strong> está suspensa por atraso no pagamento.
+          A loja <strong>{tenant.store_name}</strong> está suspensa pelo administrador.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">Conta: {email}</p>
         <div className="mt-6 space-y-2">
           <Button onClick={onRenew} size="lg" className="w-full bg-brand text-primary-foreground hover:opacity-90">
-            <RefreshCw className="mr-2 size-4" /> Pagar e reativar
+            <RefreshCw className="mr-2 size-4" /> Solicitar reativação
           </Button>
           <Button onClick={onSignOut} variant="ghost" className="w-full">Sair</Button>
         </div>
@@ -253,9 +246,9 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={<Bike className="size-5" />} label="Em estoque" value={stats.stock} />
+        <Stat icon={<Shirt className="size-5" />} label="Peças em estoque" value={stats.stock} />
         <Stat icon={<Users className="size-5" />} label="Interessados ativos" value={stats.pending} />
-        <Stat icon={<CheckCircle2 className="size-5" />} label="Motos vendidas" value={stats.sold} />
+        <Stat icon={<CheckCircle2 className="size-5" />} label="Peças vendidas" value={stats.sold} />
         <Stat icon={<DollarSign className="size-5" />} label="Faturamento" value={brl(stats.revenue)} />
       </div>
 
@@ -323,11 +316,14 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /* ============ STOCK ============ */
-const motoSchema = z.object({
-  brand: z.string().trim().min(1).max(60),
-  model: z.string().trim().min(1).max(80),
-  year: z.number().int().min(1950).max(new Date().getFullYear() + 1),
-  km: z.number().int().min(0).max(2_000_000),
+const pieceSchema = z.object({
+  brand: z.string().trim().max(60).optional().nullable(),
+  model: z.string().trim().min(1, "Informe o nome da peça").max(80),
+  piece_type: z.string().trim().max(40).optional().nullable(),
+  size: z.string().trim().max(20).optional().nullable(),
+  material: z.string().trim().max(60).optional().nullable(),
+  gender: z.string().trim().max(30).optional().nullable(),
+  gift: z.string().trim().max(120).optional().nullable(),
   price_cash: z.number().min(0),
   price_installment: z.number().min(0).optional().nullable(),
   installment_count: z.number().int().min(1).max(120).optional().nullable(),
@@ -361,21 +357,21 @@ function StockTab({ tenantId }: { tenantId: string }) {
   useEffect(() => { load(); }, [tenantId]);
 
   async function remove(id: string) {
-    if (!confirm("Excluir esta moto e suas fotos?")) return;
+    if (!confirm("Excluir esta peça e suas fotos?")) return;
     const { error } = await supabase.from("motorcycles").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Moto removida"); load();
+    toast.success("Peça removida"); load();
   }
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Estoque</h2>
-          <p className="text-sm text-muted-foreground">{list.length} motos cadastradas</p>
+          <h2 className="text-xl font-bold">Peças</h2>
+          <p className="text-sm text-muted-foreground">{list.length} peças cadastradas</p>
         </div>
         <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-brand text-primary-foreground hover:opacity-90">
-          <Plus className="mr-2 size-4" /> Nova moto
+          <Plus className="mr-2 size-4" /> Nova peça
         </Button>
       </div>
 
@@ -388,9 +384,11 @@ function StockTab({ tenantId }: { tenantId: string }) {
             <div className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-xs font-semibold uppercase text-primary">{m.brand}</div>
+                  {m.brand && <div className="text-xs font-semibold uppercase text-primary">{m.brand}</div>}
                   <div className="font-bold">{m.model}</div>
-                  <div className="text-xs text-muted-foreground">{m.year} · {m.km.toLocaleString("pt-BR")} km</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[m.piece_type, m.size ? `Tam. ${m.size}` : null, m.color].filter(Boolean).join(" · ") || "—"}
+                  </div>
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${m.status === "available" ? "bg-primary/15 text-primary" : m.status === "sold" ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground"}`}>
                   {m.status === "available" ? "Disponível" : m.status === "sold" ? "Vendida" : "Reservada"}
@@ -400,7 +398,7 @@ function StockTab({ tenantId }: { tenantId: string }) {
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => { setEditing(m); setOpen(true); }}><Edit2 className="size-3.5" /></Button>
                 <Button size="sm" variant="outline" onClick={() => remove(m.id)}><Trash2 className="size-3.5" /></Button>
-                <Link to="/motos/$id" params={{ id: m.id }} className="ml-auto text-xs text-primary hover:underline self-center">Ver página →</Link>
+                <Link to="/produto/$id" params={{ id: m.id }} className="ml-auto text-xs text-primary hover:underline self-center">Ver página →</Link>
               </div>
             </div>
           </div>
@@ -414,7 +412,7 @@ function StockTab({ tenantId }: { tenantId: string }) {
 
 function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   const empty = {
-    brand: "", model: "", year: new Date().getFullYear(), km: 0,
+    brand: "", model: "", piece_type: "", size: "", material: "", gender: "", gift: "",
     price_cash: 0, price_installment: 0, installment_count: 12, cost_price: 0,
     description: "", color: "", stock_quantity: 1, status: "available" as const,
   };
@@ -426,7 +424,9 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
     if (!open) return;
     if (moto) {
       setF({
-        brand: moto.brand, model: moto.model, year: moto.year, km: moto.km,
+        brand: moto.brand || "", model: moto.model,
+        piece_type: moto.piece_type || "", size: moto.size || "",
+        material: moto.material || "", gender: moto.gender || "", gift: moto.gift || "",
         price_cash: Number(moto.price_cash), price_installment: Number(moto.price_installment) || 0,
         installment_count: moto.installment_count || 12, cost_price: Number(moto.cost_price) || 0,
         description: moto.description || "", color: moto.color || "",
@@ -455,8 +455,14 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   }
 
   async function save() {
-    const parsed = motoSchema.safeParse({
+    const parsed = pieceSchema.safeParse({
       ...f,
+      brand: f.brand || null,
+      piece_type: f.piece_type || null,
+      size: f.size || null,
+      material: f.material || null,
+      gender: f.gender || null,
+      gift: f.gift || null,
       price_installment: f.price_installment || null,
       installment_count: f.installment_count || null,
       cost_price: f.cost_price || null,
@@ -487,13 +493,34 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader><DialogTitle>{moto ? "Editar moto" : "Nova moto"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{moto ? "Editar peça" : "Nova peça"}</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Marca"><Input value={f.brand} onChange={(e) => setF({ ...f, brand: e.target.value })} /></Field>
-          <Field label="Modelo"><Input value={f.model} onChange={(e) => setF({ ...f, model: e.target.value })} /></Field>
-          <Field label="Ano"><Input type="number" value={f.year} onChange={(e) => setF({ ...f, year: +e.target.value })} /></Field>
-          <Field label="KM rodados"><Input type="number" value={f.km} onChange={(e) => setF({ ...f, km: +e.target.value })} /></Field>
+          <Field label="Nome da peça"><Input value={f.model} onChange={(e) => setF({ ...f, model: e.target.value })} placeholder="Vestido midi floral" /></Field>
+          <Field label="Tipo de peça">
+            <Select value={f.piece_type || "none"} onValueChange={(v) => setF({ ...f, piece_type: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não informar</SelectItem>
+                {["Vestido","Blusa","Camisa","Camiseta","Short","Calça","Saia","Conjunto","Macacão","Jaqueta","Body","Biquíni","Pijama","Acessório","Calçado"].map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tamanho"><Input value={f.size} onChange={(e) => setF({ ...f, size: e.target.value })} placeholder="P, M, G, 38, 40…" /></Field>
+          <Field label="Marca (opcional)"><Input value={f.brand} onChange={(e) => setF({ ...f, brand: e.target.value })} /></Field>
           <Field label="Cor"><Input value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} /></Field>
+          <Field label="Tecido / material"><Input value={f.material} onChange={(e) => setF({ ...f, material: e.target.value })} placeholder="Algodão, viscose, linho…" /></Field>
+          <Field label="Gênero">
+            <Select value={f.gender || "none"} onValueChange={(v) => setF({ ...f, gender: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não informar</SelectItem>
+                {["Feminino","Masculino","Unissex","Infantil"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Brinde incluso (opcional)"><Input value={f.gift} onChange={(e) => setF({ ...f, gift: e.target.value })} placeholder="Ex.: par de brincos" /></Field>
           <Field label="Qtd. estoque"><Input type="number" value={f.stock_quantity} onChange={(e) => setF({ ...f, stock_quantity: +e.target.value })} /></Field>
           <Field label="Preço à vista (R$)"><Input type="number" step="0.01" value={f.price_cash} onChange={(e) => setF({ ...f, price_cash: +e.target.value })} /></Field>
           <Field label="Preço parcelado total (R$)"><Input type="number" step="0.01" value={f.price_installment} onChange={(e) => setF({ ...f, price_installment: +e.target.value })} /></Field>
@@ -552,7 +579,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
   async function load() {
     const { data } = await supabase
       .from("orders")
-      .select("*, motorcycles(brand, model, year, price_cash)")
+      .select("*, motorcycles(brand, model, piece_type, size, price_cash)")
       .in("status", filterStatus)
       .order("created_at", { ascending: false });
     setOrders(data ?? []);
@@ -588,7 +615,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente</TableHead><TableHead>Contato</TableHead><TableHead>Moto</TableHead>
+              <TableHead>Cliente</TableHead><TableHead>Contato</TableHead><TableHead>Peça</TableHead>
               <TableHead>Status</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -602,8 +629,10 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
                 </TableCell>
                 <TableCell><div className="text-sm">{o.customer_phone}</div><div className="text-xs text-muted-foreground">{o.customer_email}</div></TableCell>
                 <TableCell>
-                  <div className="text-sm font-medium">{o.motorcycles?.brand} {o.motorcycles?.model}</div>
-                  <div className="text-xs text-muted-foreground">{o.motorcycles?.year} · {brl(Number(o.motorcycles?.price_cash))}</div>
+                  <div className="text-sm font-medium">{o.motorcycles?.model}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[o.motorcycles?.piece_type, o.motorcycles?.size ? `Tam. ${o.motorcycles.size}` : null].filter(Boolean).join(" · ")} · {brl(Number(o.motorcycles?.price_cash))}
+                  </div>
                   {o.sold_price && <div className="text-xs font-semibold text-primary">Vendido: {brl(Number(o.sold_price))}</div>}
                 </TableCell>
                 <TableCell><span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold">{o.status}</span></TableCell>
@@ -625,7 +654,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
         <DialogContent>
           <DialogHeader><DialogTitle>Registrar venda</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{sellOrder?.motorcycles?.brand} {sellOrder?.motorcycles?.model} para <strong>{sellOrder?.customer_name}</strong></p>
+            <p className="text-sm text-muted-foreground">{sellOrder?.motorcycles?.model} para <strong>{sellOrder?.customer_name}</strong></p>
             <Field label="Valor da venda (R$)"><Input type="number" step="0.01" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} /></Field>
           </div>
           <DialogFooter>
@@ -653,7 +682,7 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
   }
   useEffect(() => {
     load();
-    supabase.from("motorcycles").select("id, brand, model").eq("tenant_id", tenantId).then(({ data }) => setMotos(data ?? []));
+    supabase.from("motorcycles").select("id, model").eq("tenant_id", tenantId).then(({ data }) => setMotos(data ?? []));
   }, [tenantId]);
 
   async function save() {
@@ -704,7 +733,7 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Moto</TableHead>
+              <TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Peça</TableHead>
               <TableHead>Valor</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -714,7 +743,7 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
               <TableRow key={r.id}>
                 <TableCell className="font-medium">{r.title}</TableCell>
                 <TableCell>{r.doc_type === "invoice" ? "Nota fiscal" : "Comprovante"}</TableCell>
-                <TableCell className="text-sm">{r.motorcycles ? `${r.motorcycles.brand} ${r.motorcycles.model}` : "—"}</TableCell>
+                <TableCell className="text-sm">{r.motorcycles ? r.motorcycles.model : "—"}</TableCell>
                 <TableCell>{r.amount ? brl(Number(r.amount)) : "—"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell className="text-right">
@@ -741,12 +770,12 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Moto (opcional)">
+            <Field label="Peça (opcional)">
               <Select value={f.motorcycle_id || "none"} onValueChange={(v) => setF({ ...f, motorcycle_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhuma</SelectItem>
-                  {motos.map((m) => <SelectItem key={m.id} value={m.id}>{m.brand} {m.model}</SelectItem>)}
+                  {motos.map((m) => <SelectItem key={m.id} value={m.id}>{m.model}</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>

@@ -9,14 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { brl, km, whatsappLink } from "@/lib/format";
-import { ArrowLeft, MessageCircle, ShoppingBag, CheckCircle2, Calendar, Gauge, Palette } from "lucide-react";
+import { brl, whatsappLink } from "@/lib/format";
+import { ArrowLeft, MessageCircle, ShoppingBag, CheckCircle2, Shirt, Ruler, Palette, Gift, Users } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/motos/$id")({
+export const Route = createFileRoute("/produto/$id")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Detalhes da moto — MotoStore" }] }),
-  component: MotoDetail,
+  head: () => ({
+    meta: [
+      { title: "Detalhes da peça — Use Ame" },
+      { name: "description", content: "Veja fotos, tamanho, tecido e valores desta peça e encomende para retirada na loja." },
+      { property: "og:title", content: "Detalhes da peça — Use Ame" },
+      { property: "og:description", content: "Fotos, tamanho, tecido e valores da peça, com encomenda e retirada na loja." },
+      { property: "og:type", content: "product" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: ProductDetail,
 });
 
 const orderSchema = z.object({
@@ -26,9 +35,9 @@ const orderSchema = z.object({
   message: z.string().trim().max(500).optional(),
 });
 
-function MotoDetail() {
-  const { id } = useParams({ from: "/motos/$id" });
-  const [moto, setMoto] = useState<any>(null);
+function ProductDetail() {
+  const { id } = useParams({ from: "/produto/$id" });
+  const [item, setItem] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [active, setActive] = useState(0);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -46,7 +55,7 @@ function MotoDetail() {
         .eq("id", id)
         .maybeSingle();
       if (!data) return;
-      setMoto(data);
+      setItem(data);
       setSlug((data as any).tenants?.slug || "");
       const sorted = (data.motorcycle_photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
       const urls = await Promise.all(sorted.map((p: any) => signedUrl("motorcycle-photos", p.url)));
@@ -58,7 +67,7 @@ function MotoDetail() {
     })();
   }, [id]);
 
-  if (!moto) {
+  if (!item) {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader settings={settings} slug={slug} />
@@ -67,7 +76,7 @@ function MotoDetail() {
     );
   }
 
-  const wppMsg = `Olá! Tenho interesse na ${moto.brand} ${moto.model} ${moto.year} anunciada por ${brl(Number(moto.price_cash))}.`;
+  const wppMsg = `Olá! Tenho interesse na peça ${item.model}${item.size ? ` (tam. ${item.size})` : ""} anunciada por ${brl(Number(item.price_cash))}.`;
 
   async function submit() {
     const parsed = orderSchema.safeParse(form);
@@ -75,7 +84,7 @@ function MotoDetail() {
     setSubmitting(true);
     const { error } = await supabase.from("orders").insert({
       motorcycle_id: id,
-      tenant_id: moto.tenant_id,
+      tenant_id: item.tenant_id,
       ...parsed.data,
     });
     setSubmitting(false);
@@ -98,14 +107,14 @@ function MotoDetail() {
         <div>
           <div className="overflow-hidden rounded-2xl border border-border bg-muted shadow-soft">
             <div className="aspect-[4/3] bg-graphite">
-              {photos[active] ? <img src={photos[active]} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>}
+              {photos[active] ? <img src={photos[active]} alt={item.model} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>}
             </div>
           </div>
           {photos.length > 1 && (
             <div className="mt-3 grid grid-cols-5 gap-2">
               {photos.map((p, i) => (
                 <button key={i} onClick={() => setActive(i)} className={`aspect-square overflow-hidden rounded-lg border-2 ${i === active ? "border-primary" : "border-transparent"}`}>
-                  <img src={p} alt="" className="h-full w-full object-cover" />
+                  <img src={p} alt={`${item.model} foto ${i + 1}`} className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
@@ -113,33 +122,41 @@ function MotoDetail() {
         </div>
 
         <div>
-          <div className="text-sm font-semibold uppercase tracking-wider text-primary">{moto.brand}</div>
-          <h1 className="mt-1 text-3xl font-extrabold md:text-4xl">{moto.model}</h1>
+          {item.brand && <div className="text-sm font-semibold uppercase tracking-wider text-primary">{item.brand}</div>}
+          <h1 className="mt-1 text-3xl font-extrabold md:text-4xl">{item.model}</h1>
 
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
-            <Badge icon={<Calendar className="size-4" />}>{moto.year}</Badge>
-            <Badge icon={<Gauge className="size-4" />}>{km(moto.km)}</Badge>
-            {moto.color && <Badge icon={<Palette className="size-4" />}>{moto.color}</Badge>}
+            {item.piece_type && <Badge icon={<Shirt className="size-4" />}>{item.piece_type}</Badge>}
+            {item.size && <Badge icon={<Ruler className="size-4" />}>Tam. {item.size}</Badge>}
+            {item.color && <Badge icon={<Palette className="size-4" />}>{item.color}</Badge>}
+            {item.material && <Badge icon={<Shirt className="size-4" />}>{item.material}</Badge>}
+            {item.gender && <Badge icon={<Users className="size-4" />}>{item.gender}</Badge>}
           </div>
+
+          {item.gift && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold">
+              <Gift className="size-4 text-primary" /> Vem com brinde: {item.gift}
+            </div>
+          )}
 
           <div className="mt-6 rounded-xl border border-border bg-card p-5 shadow-soft">
             <div className="text-xs uppercase text-muted-foreground">À vista</div>
-            <div className="text-3xl font-extrabold">{brl(Number(moto.price_cash))}</div>
-            {moto.price_installment && (
+            <div className="text-3xl font-extrabold">{brl(Number(item.price_cash))}</div>
+            {item.price_installment && (
               <div className="mt-2 text-sm">
                 <span className="text-muted-foreground">Parcelado: </span>
-                <span className="font-semibold">{brl(Number(moto.price_installment))}</span>
-                {moto.installment_count && (
-                  <span className="text-muted-foreground"> em até {moto.installment_count}x de {brl(Number(moto.price_installment) / moto.installment_count)}</span>
+                <span className="font-semibold">{brl(Number(item.price_installment))}</span>
+                {item.installment_count && (
+                  <span className="text-muted-foreground"> em até {item.installment_count}x de {brl(Number(item.price_installment) / item.installment_count)}</span>
                 )}
               </div>
             )}
           </div>
 
-          {moto.description && <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{moto.description}</div>}
+          {item.description && <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{item.description}</div>}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button size="lg" className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={moto.status === "sold"}>
+            <Button size="lg" className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={item.status === "sold"}>
               <ShoppingBag className="mr-2 size-4" /> Encomendar
             </Button>
             {settings?.whatsapp && (
@@ -151,7 +168,7 @@ function MotoDetail() {
 
           {settings?.address && (
             <div className="mt-8">
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Retire na loja</h3>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Retire na loja</h2>
               <StoreMap address={settings.address} lat={settings.latitude} lng={settings.longitude} />
               <p className="mt-2 text-sm text-muted-foreground">{settings.address}</p>
             </div>
@@ -164,7 +181,7 @@ function MotoDetail() {
           {!done ? (
             <>
               <DialogHeader>
-                <DialogTitle>Encomendar {moto.brand} {moto.model}</DialogTitle>
+                <DialogTitle>Encomendar {item.model}</DialogTitle>
                 <DialogDescription>Deixe seus dados que entraremos em contato.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-3">
@@ -182,7 +199,7 @@ function MotoDetail() {
               <CheckCircle2 className="mx-auto mb-3 size-14 text-primary" />
               <h3 className="text-xl font-bold">Encomenda registrada!</h3>
               <p className="mt-3 text-sm text-muted-foreground">
-                Os pagamentos são realizados <strong>somente na loja física</strong>, após análise e aprovação. Nossa equipe entrará em contato.
+                O pagamento e a <strong>retirada acontecem na loja física</strong>. Nossa equipe entrará em contato para combinar tudo.
               </p>
               <Button className="mt-5" onClick={() => setOpen(false)}>Fechar</Button>
             </div>

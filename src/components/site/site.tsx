@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { waNumber } from "@/lib/format";
-import { LogIn, MapPin, Phone } from "lucide-react";
+import { LogIn, MapPin, Phone, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type StoreSettings = {
@@ -35,14 +35,14 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link to={slug ? "/loja/$slug" : "/"} params={slug ? { slug } : undefined as any} className="flex items-center gap-3">
           {logoSrc ? (
-            <img src={logoSrc} alt="" className="h-11 w-11 rounded-lg object-cover ring-1 ring-border" />
+            <img src={logoSrc} alt={settings?.store_name ?? "Logo da loja"} className="h-11 w-11 rounded-lg object-cover ring-1 ring-border" />
           ) : (
-            <div className="grid h-11 w-11 place-items-center rounded-lg bg-brand text-primary-foreground font-black">M</div>
+            <div className="grid h-11 w-11 place-items-center rounded-lg bg-brand text-primary-foreground font-black">A</div>
           )}
           <div className="leading-tight">
-            <div className="text-base font-bold tracking-tight">{settings?.store_name ?? "MotoStore"}</div>
+            <div className="text-base font-bold tracking-tight">{settings?.store_name ?? "Use Ame"}</div>
             <div className="hidden text-xs text-muted-foreground sm:block">
-              {settings?.motivational_phrase ?? "Sua próxima aventura começa aqui."}
+              {settings?.motivational_phrase ?? "Moda que combina com você."}
             </div>
           </div>
         </Link>
@@ -95,7 +95,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
         </div>
         <div>
           <div className="mb-2 flex items-center gap-2 font-semibold">
-            <MapPin className="size-4 text-primary" /> Localização
+            <MapPin className="size-4 text-primary" /> Retirada no local
           </div>
           <p className="text-sm opacity-80">{settings.address}</p>
           {settings.whatsapp && <p className="mt-1 text-sm opacity-80">WhatsApp: {settings.whatsapp}</p>}
@@ -103,7 +103,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
           {settings.email && <p className="text-sm opacity-80">{settings.email}</p>}
         </div>
         <div>
-          <div className="mb-2 font-semibold">Horário</div>
+          <div className="mb-2 font-semibold">Horário de funcionamento</div>
           <ul className="space-y-1 text-sm opacity-80">
             {days.map(([k, label]) => (
               <li key={k} className="flex justify-between gap-4">
@@ -115,7 +115,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-        © {new Date().getFullYear()} {settings.store_name} · Powered by MotoStore SaaS
+        © {new Date().getFullYear()} {settings.store_name} · Powered by Use Ame
       </div>
     </footer>
   );
@@ -141,39 +141,44 @@ export function StoreMap({ address, lat, lng }: { address?: string | null; lat?:
   );
 }
 
-export function MotoCard({ moto, cover, slug }: { moto: any; cover: string; slug?: string }) {
+/** Card de peça de roupa da vitrine pública. */
+export function ProductCard({ item, cover, slug }: { item: any; cover: string; slug?: string }) {
+  const details = [item.piece_type, item.size ? `Tam. ${item.size}` : null, item.color].filter(Boolean).join(" · ");
   return (
     <Link
-      to="/motos/$id"
-      params={{ id: moto.id }}
+      to="/produto/$id"
+      params={{ id: item.id }}
       search={slug ? { slug } as any : undefined}
       className="group block overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elegant"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {cover ? (
-          <img src={cover} alt={`${moto.brand} ${moto.model}`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={cover} alt={`${item.brand ?? ""} ${item.model}`.trim()} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>
         )}
-        {moto.status !== "available" && (
+        {item.status !== "available" && (
           <div className="absolute right-2 top-2 rounded-md bg-secondary/95 px-2 py-1 text-xs font-semibold text-secondary-foreground">
-            {moto.status === "sold" ? "Vendida" : "Reservada"}
+            {item.status === "sold" ? "Vendida" : "Reservada"}
+          </div>
+        )}
+        {item.gift && (
+          <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
+            <Gift className="size-3" /> Brinde
           </div>
         )}
       </div>
       <div className="p-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-primary">{moto.brand}</div>
-        <h3 className="mt-0.5 truncate text-lg font-bold">{moto.model}</h3>
-        <div className="mt-1 text-xs text-muted-foreground">
-          {moto.year} · {moto.km.toLocaleString("pt-BR")} km
-        </div>
+        {item.brand && <div className="text-xs font-semibold uppercase tracking-wider text-primary">{item.brand}</div>}
+        <h3 className="mt-0.5 truncate text-lg font-bold">{item.model}</h3>
+        {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
         <div className="mt-3 text-xl font-extrabold text-foreground">
-          {Number(moto.price_cash).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          {Number(item.price_cash).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </div>
-        {moto.price_installment && (
+        {item.price_installment && (
           <div className="text-xs text-muted-foreground">
-            ou {moto.installment_count || 12}x de{" "}
-            {(Number(moto.price_installment) / (moto.installment_count || 12)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            ou {item.installment_count || 12}x de{" "}
+            {(Number(item.price_installment) / (item.installment_count || 12)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
         )}
       </div>
