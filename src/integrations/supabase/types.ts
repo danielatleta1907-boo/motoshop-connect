@@ -50,7 +50,6 @@ export type Database = {
         Row: {
           brand: string
           color: string | null
-          cost_price: number | null
           created_at: string
           description: string | null
           gender: string | null
@@ -73,7 +72,6 @@ export type Database = {
         Insert: {
           brand: string
           color?: string | null
-          cost_price?: number | null
           created_at?: string
           description?: string | null
           gender?: string | null
@@ -96,7 +94,6 @@ export type Database = {
         Update: {
           brand?: string
           color?: string | null
-          cost_price?: number | null
           created_at?: string
           description?: string | null
           gender?: string | null
@@ -312,6 +309,45 @@ export type Database = {
           },
           {
             foreignKeyName: "payment_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_costs: {
+        Row: {
+          cost_price: number | null
+          created_at: string
+          motorcycle_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cost_price?: number | null
+          created_at?: string
+          motorcycle_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cost_price?: number | null
+          created_at?: string
+          motorcycle_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_costs_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: true
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_costs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

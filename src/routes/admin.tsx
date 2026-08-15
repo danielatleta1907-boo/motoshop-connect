@@ -221,16 +221,19 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
 
   useEffect(() => { load(); }, [tenantId]);
   async function load() {
-    const [{ count: stock }, { count: pending }, { data: sold }] = await Promise.all([
+    const [{ count: stock }, { count: pending }, { data: sold }, { data: costs }] = await Promise.all([
       supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "available"),
       supabase.from("orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "pending"),
-      supabase.from("orders").select("sold_price, updated_at, motorcycle_id, motorcycles(cost_price)").eq("tenant_id", tenantId).eq("status", "sold"),
+      supabase.from("orders").select("sold_price, updated_at, motorcycle_id").eq("tenant_id", tenantId).eq("status", "sold"),
+      supabase.from("product_costs").select("motorcycle_id, cost_price").eq("tenant_id", tenantId),
     ]);
+    const costMap: Record<string, number> = {};
+    (costs ?? []).forEach((c: any) => { costMap[c.motorcycle_id] = Number(c.cost_price) || 0; });
     let revenue = 0; let cost = 0;
     const byM: Record<string, { sales: number; profit: number }> = {};
     (sold ?? []).forEach((o: any) => {
       const price = Number(o.sold_price) || 0;
-      const c = Number(o.motorcycles?.cost_price) || 0;
+      const c = costMap[o.motorcycle_id] || 0;
       revenue += price; cost += c;
       const d = new Date(o.updated_at);
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -238,6 +241,7 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
       byM[k].sales += price;
       byM[k].profit += price - c;
     });
+
     setStats({ stock: stock || 0, pending: pending || 0, sold: sold?.length || 0, revenue, cost });
     setByMonth(Object.entries(byM).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v })));
   }
@@ -317,7 +321,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 /* ============ STOCK ============ */
 const pieceSchema = z.object({
-  brand: z.string().trim().max(60).optional().nullable(),
+  brand: z.string().trim().max(60).default(""),
   model: z.string().trim().min(1, "Informe o nome da peça").max(80),
   piece_type: z.string().trim().max(40).optional().nullable(),
   size: z.string().trim().max(20).optional().nullable(),
@@ -428,13 +432,16 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
         piece_type: moto.piece_type || "", size: moto.size || "",
         material: moto.material || "", gender: moto.gender || "", gift: moto.gift || "",
         price_cash: Number(moto.price_cash), price_installment: Number(moto.price_installment) || 0,
-        installment_count: moto.installment_count || 12, cost_price: Number(moto.cost_price) || 0,
+        installment_count: moto.installment_count || 12, cost_price: 0,
         description: moto.description || "", color: moto.color || "",
         stock_quantity: moto.stock_quantity, status: moto.status,
       });
+      supabase.from("product_costs").select("cost_price").eq("motorcycle_id", moto.id).maybeSingle()
+        .then(({ data }) => { if (data) setF((prev: any) => ({ ...prev, cost_price: Number(data.cost_price) || 0 })); });
       const ph = (moto.motorcycle_photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
       Promise.all(ph.map(async (p: any) => ({ id: p.id, url: p.url, signed: await signedUrl("motorcycle-photos", p.url) })))
         .then(setPhotos);
+
     } else {
       setF(empty); setPhotos([]);
     }
@@ -457,7 +464,7 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   async function save() {
     const parsed = pieceSchema.safeParse({
       ...f,
-      brand: f.brand || null,
+      brand: f.brand || "",
       piece_type: f.piece_type || null,
       size: f.size || null,
       material: f.material || null,
@@ -469,15 +476,23 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
     });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setSaving(true);
+    // cost_price fica em tabela privada (product_costs), nunca no catálogo público
+    const { cost_price, ...productData } = parsed.data;
     let id = moto?.id as string | undefined;
     if (id) {
-      const { error } = await supabase.from("motorcycles").update(parsed.data).eq("id", id);
+      const { error } = await supabase.from("motorcycles").update(productData).eq("id", id);
       if (error) { setSaving(false); return toast.error(error.message); }
     } else {
-      const { data, error } = await supabase.from("motorcycles").insert({ ...parsed.data, tenant_id: tenantId }).select("id").single();
+      const { data, error } = await supabase.from("motorcycles").insert({ ...productData, tenant_id: tenantId }).select("id").single();
       if (error || !data) { setSaving(false); return toast.error(error?.message || "Erro"); }
       id = data.id;
     }
+    if (cost_price == null) {
+      await supabase.from("product_costs").delete().eq("motorcycle_id", id);
+    } else {
+      await supabase.from("product_costs").upsert({ motorcycle_id: id, tenant_id: tenantId, cost_price }, { onConflict: "motorcycle_id" });
+    }
+
     const news = photos.filter((p) => p.file);
     for (let i = 0; i < news.length; i++) {
       const p = news[i];
