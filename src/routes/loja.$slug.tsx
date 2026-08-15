@@ -2,11 +2,11 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { SiteHeader, SiteFooter, ProductCard, StoreMap, fetchTenantBySlug, type StoreSettings } from "@/components/site/site";
+import { SiteHeader, SiteFooter, ProductCard, StoreMap, FloatingWhatsApp, fetchTenantBySlug, type StoreSettings } from "@/components/site/site";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { buildThemeStyle, shade, readableOn, isGradient, firstColorOf } from "@/lib/theme-color";
+import { storeTheme } from "@/lib/store-theme";
 
 export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
@@ -159,6 +159,7 @@ function PublicStore() {
       )}
 
       <SiteFooter settings={settings} footerStyle={footerStyle} />
+      <FloatingWhatsApp phone={settings?.whatsapp} message={`Olá! Vim pela loja ${settings?.store_name ?? ""} e quero mais informações.`} buttonColor={buttonColor} />
       </div>
     </div>
   );
