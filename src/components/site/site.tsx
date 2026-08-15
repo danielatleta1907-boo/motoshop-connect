@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { waNumber } from "@/lib/format";
-import { LogIn, MapPin, Phone, Gift } from "lucide-react";
+import { whatsappLink } from "@/lib/format";
+import { buttonStyleFor } from "@/lib/store-theme";
+import { LogIn, MapPin, Phone, Gift, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type StoreSettings = {
