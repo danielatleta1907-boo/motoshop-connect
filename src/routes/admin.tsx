@@ -432,7 +432,7 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
         piece_type: moto.piece_type || "", size: moto.size || "",
         material: moto.material || "", gender: moto.gender || "", gift: moto.gift || "",
         price_cash: Number(moto.price_cash), price_installment: Number(moto.price_installment) || 0,
-        installment_count: moto.installment_count || 12, cost_price: Number(moto.cost_price) || 0,
+        installment_count: moto.installment_count || 12, cost_price: 0,
         description: moto.description || "", color: moto.color || "",
         stock_quantity: moto.stock_quantity, status: moto.status,
       });
