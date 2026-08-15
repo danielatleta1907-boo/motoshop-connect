@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { SiteHeader, SiteFooter, StoreMap, type StoreSettings } from "@/components/site/site";
+import { SiteHeader, SiteFooter, StoreMap, FloatingWhatsApp, type StoreSettings } from "@/components/site/site";
+import { storeTheme } from "@/lib/store-theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,6 +77,8 @@ function ProductDetail() {
     );
   }
 
+  const { themeStyle, headerStyle, footerStyle, buttonColor, buttonStyle, cardBgOverride } = storeTheme(settings);
+
   const wppMsg = `Olá! Tenho interesse na peça ${item.model}${item.size ? ` (tam. ${item.size})` : ""} anunciada por ${brl(Number(item.price_cash))}.`;
 
   async function submit() {
@@ -93,8 +96,12 @@ function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader settings={settings} slug={slug} />
+    <div className="min-h-screen bg-background text-foreground" style={themeStyle}>
+      {cardBgOverride && (
+        <style>{`[data-store-root] .bg-card{background:${cardBgOverride} !important;}`}</style>
+      )}
+      <div data-store-root>
+      <SiteHeader settings={settings} slug={slug} headerStyle={headerStyle} buttonColor={buttonColor} />
       <div className="mx-auto max-w-7xl px-4 py-6">
         {slug && (
           <Link to="/loja/$slug" params={{ slug }} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -156,12 +163,12 @@ function ProductDetail() {
           {item.description && <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{item.description}</div>}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button size="lg" className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={item.status === "sold"}>
+            <Button size="lg" style={buttonStyle} className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={item.status === "sold"}>
               <ShoppingBag className="mr-2 size-4" /> Encomendar
             </Button>
-            {settings?.whatsapp && (
-              <a href={whatsappLink(settings.whatsapp, wppMsg)} target="_blank" rel="noreferrer">
-                <Button size="lg" variant="outline" className="w-full"><MessageCircle className="mr-2 size-4" /> WhatsApp</Button>
+            {whatsappLink(settings?.whatsapp, wppMsg) && (
+              <a href={whatsappLink(settings?.whatsapp, wppMsg)} target="_blank" rel="noreferrer">
+                <Button size="lg" variant="outline" style={buttonStyle} className="w-full"><MessageCircle className="mr-2 size-4" /> WhatsApp</Button>
               </a>
             )}
           </div>
@@ -207,7 +214,9 @@ function ProductDetail() {
         </DialogContent>
       </Dialog>
 
-      <SiteFooter settings={settings} />
+      <SiteFooter settings={settings} footerStyle={footerStyle} />
+      <FloatingWhatsApp phone={settings?.whatsapp} message={wppMsg} buttonColor={buttonColor} />
+      </div>
     </div>
   );
 }

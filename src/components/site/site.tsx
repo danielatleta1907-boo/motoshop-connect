@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { waNumber } from "@/lib/format";
-import { LogIn, MapPin, Phone, Gift } from "lucide-react";
+import { whatsappLink } from "@/lib/format";
+import { buttonStyleFor } from "@/lib/store-theme";
+import { LogIn, MapPin, Phone, Gift, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type StoreSettings = {
@@ -26,9 +27,15 @@ export type StoreSettings = {
 export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { settings: StoreSettings | null; slug?: string; headerStyle?: React.CSSProperties; buttonColor?: string }) {
   const [logoSrc, setLogoSrc] = useState<string>("");
   useEffect(() => {
-    if (settings?.logo_url) signedUrl("store-assets", settings.logo_url).then(setLogoSrc);
-    else setLogoSrc("");
+    let alive = true;
+    if (settings?.logo_url) {
+      signedUrl("store-assets", settings.logo_url).then((u) => { if (alive) setLogoSrc(u); });
+    } else setLogoSrc("");
+    return () => { alive = false; };
   }, [settings?.logo_url]);
+
+  const waHref = whatsappLink(settings?.whatsapp, `Olá! Vim pela loja ${settings?.store_name ?? ""} e quero mais informações.`);
+  const btnStyle = buttonStyleFor(buttonColor);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md" style={headerStyle}>
@@ -47,25 +54,17 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
           </div>
         </Link>
         <div className="flex items-center gap-2">
-          {settings?.whatsapp && (() => {
-            const isGrad = !!buttonColor && /gradient\(/i.test(buttonColor);
-            const style = buttonColor
-              ? isGrad
-                ? { background: buttonColor, color: "#fff", borderColor: "transparent" }
-                : { backgroundColor: buttonColor, color: "#fff", borderColor: buttonColor }
-              : undefined;
-            return (
-              <a
-                href={`https://wa.me/${waNumber(settings.whatsapp)}`}
-                target="_blank"
-                rel="noreferrer"
-                style={style}
-                className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90 md:inline-flex"
-              >
-                <Phone className="size-4" style={buttonColor ? { color: "#fff" } : undefined} /> WhatsApp
-              </a>
-            );
-          })()}
+          {waHref && (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noreferrer"
+              style={btnStyle}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:opacity-90"
+            >
+              <Phone className="size-4" /> <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+          )}
           <Link
             to="/auth"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -75,6 +74,25 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
         </div>
       </div>
     </header>
+  );
+}
+
+/** Botão flutuante de WhatsApp (fixo no canto), seguindo a cor escolhida pelo lojista. */
+export function FloatingWhatsApp({ phone, message, buttonColor }: { phone?: string | null; message?: string; buttonColor?: string }) {
+  const href = whatsappLink(phone, message);
+  if (!href) return null;
+  const style = buttonStyleFor(buttonColor || "#25d366");
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Falar no WhatsApp"
+      style={style}
+      className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold shadow-elegant transition-transform hover:scale-105"
+    >
+      <MessageCircle className="size-5" /> WhatsApp
+    </a>
   );
 }
 

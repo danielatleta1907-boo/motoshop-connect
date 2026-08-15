@@ -8,15 +8,29 @@ export const km = (n: number | null | undefined) =>
 
 export const onlyDigits = (s: string) => s.replace(/\D+/g, "");
 
-// Garante DDI Brasil (55) quando o número foi salvo só com DDD.
-export const waNumber = (phone: string) => {
-  const d = onlyDigits(phone);
+/**
+ * Normaliza um telefone brasileiro para o formato exigido pela API do WhatsApp
+ * (DDI + DDD + número, apenas dígitos).
+ * Aceita "(83) 9 3618-0252", "+55 83 93618-0252", "083936180252", etc.
+ */
+export const waNumber = (phone: string | null | undefined) => {
+  let d = onlyDigits(phone || "");
   if (!d) return "";
-  if (d.startsWith("55")) return d;
-  // 10 (fixo) ou 11 (celular) dígitos = número BR sem DDI
+  // remove zeros de operadora/prefixo internacional: 0055..., 083...
+  d = d.replace(/^0+/, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  // já com DDI Brasil
+  if (d.startsWith("55") && (d.length === 12 || d.length === 13)) return d;
+  // número BR sem DDI: 10 (fixo) ou 11 (celular) dígitos
   if (d.length === 10 || d.length === 11) return `55${d}`;
+  // celular sem DDI e sem o 9 (ex.: 83 3618-0252 já cai acima); demais casos
+  if (d.length < 10) return "";
   return d;
 };
 
-export const whatsappLink = (phone: string, msg: string) =>
-  `https://wa.me/${waNumber(phone)}?text=${encodeURIComponent(msg)}`;
+/** Link válido para abrir a conversa no WhatsApp (web e app). */
+export const whatsappLink = (phone: string | null | undefined, msg?: string) => {
+  const n = waNumber(phone);
+  if (!n) return "";
+  return msg ? `https://wa.me/${n}?text=${encodeURIComponent(msg)}` : `https://wa.me/${n}`;
+};

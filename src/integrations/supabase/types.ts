@@ -376,6 +376,56 @@ export type Database = {
         }
         Relationships: []
       }
+      profit_cycles: {
+        Row: {
+          closed_at: string | null
+          cost: number
+          created_at: string
+          id: string
+          label: string | null
+          profit: number
+          revenue: number
+          sales_count: number
+          started_at: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          cost?: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          profit?: number
+          revenue?: number
+          sales_count?: number
+          started_at?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          cost?: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          profit?: number
+          revenue?: number
+          sales_count?: number
+          started_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profit_cycles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
           about: string | null
