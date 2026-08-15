@@ -461,7 +461,7 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
   async function save() {
     const parsed = pieceSchema.safeParse({
       ...f,
-      brand: f.brand || null,
+      brand: f.brand || "",
       piece_type: f.piece_type || null,
       size: f.size || null,
       material: f.material || null,
@@ -473,15 +473,23 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
     });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setSaving(true);
+    // cost_price fica em tabela privada (product_costs), nunca no catálogo público
+    const { cost_price, ...productData } = parsed.data;
     let id = moto?.id as string | undefined;
     if (id) {
-      const { error } = await supabase.from("motorcycles").update(parsed.data).eq("id", id);
+      const { error } = await supabase.from("motorcycles").update(productData).eq("id", id);
       if (error) { setSaving(false); return toast.error(error.message); }
     } else {
-      const { data, error } = await supabase.from("motorcycles").insert({ ...parsed.data, tenant_id: tenantId }).select("id").single();
+      const { data, error } = await supabase.from("motorcycles").insert({ ...productData, tenant_id: tenantId }).select("id").single();
       if (error || !data) { setSaving(false); return toast.error(error?.message || "Erro"); }
       id = data.id;
     }
+    if (cost_price == null) {
+      await supabase.from("product_costs").delete().eq("motorcycle_id", id);
+    } else {
+      await supabase.from("product_costs").upsert({ motorcycle_id: id, tenant_id: tenantId, cost_price }, { onConflict: "motorcycle_id" });
+    }
+
     const news = photos.filter((p) => p.file);
     for (let i = 0; i < news.length; i++) {
       const p = news[i];
