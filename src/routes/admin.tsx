@@ -436,9 +436,12 @@ function MotoFormDialog({ tenantId, open, onOpenChange, moto, onSaved }: any) {
         description: moto.description || "", color: moto.color || "",
         stock_quantity: moto.stock_quantity, status: moto.status,
       });
+      supabase.from("product_costs").select("cost_price").eq("motorcycle_id", moto.id).maybeSingle()
+        .then(({ data }) => { if (data) setF((prev: any) => ({ ...prev, cost_price: Number(data.cost_price) || 0 })); });
       const ph = (moto.motorcycle_photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
       Promise.all(ph.map(async (p: any) => ({ id: p.id, url: p.url, signed: await signedUrl("motorcycle-photos", p.url) })))
         .then(setPhotos);
+
     } else {
       setF(empty); setPhotos([]);
     }
