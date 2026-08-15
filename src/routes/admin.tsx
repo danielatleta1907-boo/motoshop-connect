@@ -321,7 +321,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 /* ============ STOCK ============ */
 const pieceSchema = z.object({
-  brand: z.string().trim().max(60).optional().nullable(),
+  brand: z.string().trim().max(60).default(""),
   model: z.string().trim().min(1, "Informe o nome da peça").max(80),
   piece_type: z.string().trim().max(40).optional().nullable(),
   size: z.string().trim().max(20).optional().nullable(),
