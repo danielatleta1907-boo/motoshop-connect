@@ -221,16 +221,19 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
 
   useEffect(() => { load(); }, [tenantId]);
   async function load() {
-    const [{ count: stock }, { count: pending }, { data: sold }] = await Promise.all([
+    const [{ count: stock }, { count: pending }, { data: sold }, { data: costs }] = await Promise.all([
       supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "available"),
       supabase.from("orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "pending"),
-      supabase.from("orders").select("sold_price, updated_at, motorcycle_id, motorcycles(cost_price)").eq("tenant_id", tenantId).eq("status", "sold"),
+      supabase.from("orders").select("sold_price, updated_at, motorcycle_id").eq("tenant_id", tenantId).eq("status", "sold"),
+      supabase.from("product_costs").select("motorcycle_id, cost_price").eq("tenant_id", tenantId),
     ]);
+    const costMap: Record<string, number> = {};
+    (costs ?? []).forEach((c: any) => { costMap[c.motorcycle_id] = Number(c.cost_price) || 0; });
     let revenue = 0; let cost = 0;
     const byM: Record<string, { sales: number; profit: number }> = {};
     (sold ?? []).forEach((o: any) => {
       const price = Number(o.sold_price) || 0;
-      const c = Number(o.motorcycles?.cost_price) || 0;
+      const c = costMap[o.motorcycle_id] || 0;
       revenue += price; cost += c;
       const d = new Date(o.updated_at);
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -238,6 +241,7 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
       byM[k].sales += price;
       byM[k].profit += price - c;
     });
+
     setStats({ stock: stock || 0, pending: pending || 0, sold: sold?.length || 0, revenue, cost });
     setByMonth(Object.entries(byM).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v })));
   }
