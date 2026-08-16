@@ -1041,7 +1041,7 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
           <Label>Logo</Label>
           <div className="mt-2 flex items-center gap-3">
             {logoPreview && <img src={logoPreview} className="size-16 rounded-lg border border-border object-cover" alt="Logo atual da loja" />}
-            <Input type="file" accept="image/*" onChange={(e) => {
+            <Input type="file" accept="image/*,.png,.jpg,.jpeg,.webp,.avif,.gif,.svg,.bmp,.heic,.heif" onChange={(e) => {
               const f = e.target.files?.[0] || null;
               setLogoFile(f);
               if (f) setLogoPreview(URL.createObjectURL(f));
