@@ -41,10 +41,10 @@ function Landing() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <div className="grid size-10 place-items-center rounded-lg bg-brand text-primary-foreground font-black">A</div>
+            <div className="grid size-10 place-items-center rounded-lg bg-brand text-primary-foreground font-black text-sm">ME</div>
             <div className="leading-tight">
               <div className="text-base font-bold">Moda & Estilo</div>
-              <div className="text-[10px] uppercase tracking-widest text-primary">Moda & Estilo</div>
+              <div className="text-[10px] uppercase tracking-widest text-primary">Vitrine de moda</div>
             </div>
           </Link>
           <nav className="hidden gap-6 text-sm text-muted-foreground md:flex">
