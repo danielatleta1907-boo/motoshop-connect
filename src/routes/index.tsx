@@ -11,9 +11,9 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Use Ame — Vitrine online gratuita para lojas de roupas" },
+      { title: "Moda & Estilo — Vitrine online gratuita para lojas de roupas" },
       { name: "description", content: "Monte a vitrine da sua loja de roupas: catálogo com fotos, tamanhos, brindes, retirada no local, mapa e WhatsApp integrado. Uso 100% gratuito." },
-      { property: "og:title", content: "Use Ame — Vitrine online gratuita para lojas de roupas" },
+      { property: "og:title", content: "Moda & Estilo — Vitrine online gratuita para lojas de roupas" },
       { property: "og:description", content: "Catálogo de peças, painel de vendas, mapa e WhatsApp para a sua loja de roupas. Grátis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -41,10 +41,10 @@ function Landing() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <div className="grid size-10 place-items-center rounded-lg bg-brand text-primary-foreground font-black">A</div>
+            <div className="grid size-10 place-items-center rounded-lg bg-brand text-primary-foreground font-black text-sm">ME</div>
             <div className="leading-tight">
-              <div className="text-base font-bold">Use Ame</div>
-              <div className="text-[10px] uppercase tracking-widest text-primary">Moda & Estilo</div>
+              <div className="text-base font-bold">Moda & Estilo</div>
+              <div className="text-[10px] uppercase tracking-widest text-primary">Vitrine de moda</div>
             </div>
           </Link>
           <nav className="hidden gap-6 text-sm text-muted-foreground md:flex">
@@ -163,7 +163,7 @@ function Landing() {
         <h2 className="text-3xl font-extrabold md:text-4xl">Perguntas frequentes</h2>
         <div className="mt-8 space-y-4">
           {[
-            ["Quanto custa?", "Nada. O Use Ame é gratuito para as lojas cadastradas. Você só precisa criar sua conta e aguardar a liberação do administrador."],
+            ["Quanto custa?", "Nada. O Moda & Estilo é gratuito para as lojas cadastradas. Você só precisa criar sua conta e aguardar a liberação do administrador."],
             ["Como funciona a liberação?", "Você cria a conta, envia a solicitação com o nome da sua loja e o administrador aprova. A liberação acontece em até 12 horas."],
             ["Como o cliente compra?", "Ele escolhe a peça na vitrine, envia a encomenda ou chama no WhatsApp e retira no local combinado com a loja."],
             ["Posso mudar as cores e a logo?", "Sim. No painel da loja você edita logo, frase, cores (inclusive degradê), endereço, horários e WhatsApp."],
@@ -183,11 +183,11 @@ function Landing() {
       <footer className="border-t border-border bg-secondary text-secondary-foreground">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">A</div>
-            <span className="font-bold">Use Ame</span>
+            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black text-xs">ME</div>
+            <span className="font-bold">Moda & Estilo</span>
           </div>
           <div className="flex flex-col items-center gap-1 md:flex-row md:gap-4">
-            <p className="text-xs opacity-60">© {new Date().getFullYear()} Use Ame. Todos os direitos reservados.</p>
+            <p className="text-xs opacity-60">© {new Date().getFullYear()} Moda & Estilo. Todos os direitos reservados.</p>
             <a
               href="mailto:danielatleta1907@gmail.com?subject=Preciso%20de%20um%20software&body=Ol%C3%A1%20Daniel%2C%20gostaria%20de%20conversar%20sobre%20o%20desenvolvimento%20de%20um%20software."
               onClick={(e) => {

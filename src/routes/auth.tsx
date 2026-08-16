@@ -14,10 +14,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Acesso da loja — Use Ame" },
-      { name: "description", content: "Entre ou crie sua conta gratuita para gerenciar a vitrine da sua loja de roupas no Use Ame." },
-      { property: "og:title", content: "Acesso da loja — Use Ame" },
-      { property: "og:description", content: "Entre ou crie sua conta gratuita no Use Ame." },
+      { title: "Acesso da loja — Moda & Estilo" },
+      { name: "description", content: "Entre ou crie sua conta gratuita para gerenciar a vitrine da sua loja de roupas no Moda & Estilo." },
+      { property: "og:title", content: "Acesso da loja — Moda & Estilo" },
+      { property: "og:description", content: "Entre ou crie sua conta gratuita no Moda & Estilo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -73,7 +73,7 @@ function AuthPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="bg-hero hidden flex-col justify-between p-12 text-white lg:flex">
-        <div className="text-xl font-bold tracking-tight">Use Ame · Painel</div>
+        <div className="text-xl font-bold tracking-tight">Moda & Estilo · Painel</div>
         <div>
           <h1 className="text-5xl font-extrabold leading-tight">Sua loja de roupas, do seu jeito.</h1>
           <p className="mt-4 max-w-md text-white/80">
