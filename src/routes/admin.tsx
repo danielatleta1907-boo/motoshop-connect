@@ -215,50 +215,130 @@ function SuspendedScreen({ tenant, email, onRenew, onSignOut }: any) {
 }
 
 /* ============ DASHBOARD ============ */
+type Cycle = {
+  id: string; tenant_id: string; label: string | null; started_at: string; closed_at: string | null;
+  revenue: number; cost: number; profit: number; sales_count: number;
+};
+
+const monthLabel = (key: string) => {
+  const [y, m] = key.split("-");
+  const d = new Date(Number(y), Number(m) - 1, 1);
+  return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+};
+
 function DashboardTab({ tenantId }: { tenantId: string }) {
   const [stats, setStats] = useState({ stock: 0, pending: 0, sold: 0, revenue: 0, cost: 0 });
-  const [byMonth, setByMonth] = useState<{ month: string; sales: number; profit: number }[]>([]);
+  const [byMonth, setByMonth] = useState<{ month: string; sales: number; profit: number; count: number }[]>([]);
+  const [cycle, setCycle] = useState<Cycle | null>(null);
+  const [history, setHistory] = useState<Cycle[]>([]);
+  const [histOpen, setHistOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => { load(); }, [tenantId]);
+
+  async function ensureCycle(): Promise<Cycle | null> {
+    const { data: open } = await supabase
+      .from("profit_cycles").select("*").eq("tenant_id", tenantId).is("closed_at", null).maybeSingle();
+    if (open) return open as Cycle;
+    const { data: created } = await supabase
+      .from("profit_cycles")
+      .insert({ tenant_id: tenantId, label: monthLabel(new Date().toISOString().slice(0, 7)) })
+      .select("*").maybeSingle();
+    return (created as Cycle) ?? null;
+  }
+
   async function load() {
-    const [{ count: stock }, { count: pending }, { data: sold }, { data: costs }] = await Promise.all([
+    const cur = await ensureCycle();
+    setCycle(cur);
+
+    const [{ count: stock }, { count: pending }, { data: sold }, { data: costs }, { data: closed }] = await Promise.all([
       supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "available"),
       supabase.from("orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "pending"),
       supabase.from("orders").select("sold_price, updated_at, motorcycle_id").eq("tenant_id", tenantId).eq("status", "sold"),
       supabase.from("product_costs").select("motorcycle_id, cost_price").eq("tenant_id", tenantId),
+      supabase.from("profit_cycles").select("*").eq("tenant_id", tenantId).not("closed_at", "is", null).order("started_at", { ascending: false }),
     ]);
+
+    setHistory((closed ?? []) as Cycle[]);
+
     const costMap: Record<string, number> = {};
     (costs ?? []).forEach((c: any) => { costMap[c.motorcycle_id] = Number(c.cost_price) || 0; });
-    let revenue = 0; let cost = 0;
-    const byM: Record<string, { sales: number; profit: number }> = {};
+
+    const cycleStart = cur ? new Date(cur.started_at).getTime() : 0;
+    let revenue = 0; let cost = 0; let soldCount = 0;
+    const byM: Record<string, { sales: number; profit: number; count: number }> = {};
+
     (sold ?? []).forEach((o: any) => {
       const price = Number(o.sold_price) || 0;
       const c = costMap[o.motorcycle_id] || 0;
-      revenue += price; cost += c;
       const d = new Date(o.updated_at);
+      // painel atual = somente vendas do ciclo aberto
+      if (d.getTime() >= cycleStart) { revenue += price; cost += c; soldCount += 1; }
+      // histórico completo por mês (nunca é zerado)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      byM[k] = byM[k] || { sales: 0, profit: 0 };
+      byM[k] = byM[k] || { sales: 0, profit: 0, count: 0 };
       byM[k].sales += price;
       byM[k].profit += price - c;
+      byM[k].count += 1;
     });
 
-    setStats({ stock: stock || 0, pending: pending || 0, sold: sold?.length || 0, revenue, cost });
+    setStats({ stock: stock || 0, pending: pending || 0, sold: soldCount, revenue, cost });
     setByMonth(Object.entries(byM).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v })));
   }
+
+  async function resetProfit() {
+    if (!cycle) return;
+    setBusy(true);
+    const profit = stats.revenue - stats.cost;
+    const { error: closeErr } = await supabase.from("profit_cycles").update({
+      closed_at: new Date().toISOString(),
+      revenue: stats.revenue, cost: stats.cost, profit, sales_count: stats.sold,
+    }).eq("id", cycle.id);
+    if (closeErr) { setBusy(false); return toast.error(closeErr.message); }
+    const { error: newErr } = await supabase.from("profit_cycles").insert({
+      tenant_id: tenantId,
+      label: monthLabel(new Date().toISOString().slice(0, 7)),
+    });
+    setBusy(false);
+    setResetOpen(false);
+    if (newErr) return toast.error(newErr.message);
+    toast.success("Painel de lucros zerado. O histórico foi preservado.");
+    load();
+  }
+
   const margin = stats.revenue > 0 ? ((stats.revenue - stats.cost) / stats.revenue) * 100 : 0;
+  const allTimeProfit = byMonth.reduce((a, m) => a + m.profit, 0);
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-soft">
+        <div className="text-sm">
+          <div className="font-semibold">Período atual de lucros</div>
+          <div className="text-muted-foreground">
+            Desde {cycle ? new Date(cycle.started_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setHistOpen(true)}>
+            <Clock className="mr-2 size-4" /> Histórico de lucros (mês a mês)
+          </Button>
+          <Button size="sm" className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => setResetOpen(true)}>
+            <RefreshCw className="mr-2 size-4" /> Iniciar novo mês (zerar lucros)
+          </Button>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={<Shirt className="size-5" />} label="Peças em estoque" value={stats.stock} />
         <Stat icon={<Users className="size-5" />} label="Interessados ativos" value={stats.pending} />
-        <Stat icon={<CheckCircle2 className="size-5" />} label="Peças vendidas" value={stats.sold} />
-        <Stat icon={<DollarSign className="size-5" />} label="Faturamento" value={brl(stats.revenue)} />
+        <Stat icon={<CheckCircle2 className="size-5" />} label="Vendas no período" value={stats.sold} />
+        <Stat icon={<DollarSign className="size-5" />} label="Faturamento do período" value={brl(stats.revenue)} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
-          <div className="text-sm text-muted-foreground">Lucro bruto</div>
+          <div className="text-sm text-muted-foreground">Lucro do período</div>
           <div className="mt-1 text-2xl font-extrabold text-primary">{brl(stats.revenue - stats.cost)}</div>
           <div className="mt-1 text-xs text-muted-foreground">Custo total: {brl(stats.cost)}</div>
         </div>
@@ -268,8 +348,9 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
           <div className="mt-1 text-xs text-muted-foreground">Lucro / Faturamento</div>
         </div>
         <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
-          <div className="text-sm text-muted-foreground">Ticket médio</div>
-          <div className="mt-1 text-2xl font-extrabold">{brl(stats.sold > 0 ? stats.revenue / stats.sold : 0)}</div>
+          <div className="text-sm text-muted-foreground">Lucro total desde a abertura</div>
+          <div className="mt-1 text-2xl font-extrabold">{brl(allTimeProfit)}</div>
+          <div className="mt-1 text-xs text-muted-foreground">Nunca é zerado</div>
         </div>
       </div>
 
@@ -303,6 +384,72 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
           </div>
         </div>
       </div>
+
+      {/* Histórico mês a mês */}
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Histórico de lucros desde a abertura da loja</DialogTitle></DialogHeader>
+          {byMonth.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma venda registrada ainda.</p>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mês</TableHead>
+                    <TableHead>Vendas</TableHead>
+                    <TableHead>Faturamento</TableHead>
+                    <TableHead>Lucro</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...byMonth].reverse().map((m) => (
+                    <TableRow key={m.month}>
+                      <TableCell className="capitalize">{monthLabel(m.month)}</TableCell>
+                      <TableCell>{m.count}</TableCell>
+                      <TableCell>{brl(m.sales)}</TableCell>
+                      <TableCell className="font-semibold text-primary">{brl(m.profit)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {history.length > 0 && (
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="mb-2 text-sm font-semibold">Períodos fechados pelo lojista</div>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {history.map((c) => (
+                  <li key={c.id} className="flex justify-between gap-4">
+                    <span>
+                      {new Date(c.started_at).toLocaleDateString("pt-BR")} → {c.closed_at ? new Date(c.closed_at).toLocaleDateString("pt-BR") : "—"}
+                    </span>
+                    <span className="font-semibold text-foreground">{brl(Number(c.profit))}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar zerar */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Iniciar novo mês?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O painel de lucros voltará a zero para as próximas vendas. O lucro atual de{" "}
+            <strong className="text-foreground">{brl(stats.revenue - stats.cost)}</strong> será guardado no histórico e continuará
+            visível no botão “Histórico de lucros”.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetOpen(false)}>Cancelar</Button>
+            <Button disabled={busy} className="bg-brand text-primary-foreground hover:opacity-90" onClick={resetProfit}>
+              {busy ? "Zerando…" : "Zerar e começar novo mês"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -836,9 +983,16 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
     setSaving(true);
     let logo_url = s.logo_url;
     if (logoFile) {
-      const path = `${tenantId}/logo_${Date.now()}_${logoFile.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
-      const { error } = await supabase.storage.from("store-assets").upload(path, logoFile, { upsert: true });
-      if (!error) logo_url = path;
+      const ext = (logoFile.name.split(".").pop() || "png").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const path = `${tenantId}/logo_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("store-assets")
+        .upload(path, logoFile, { upsert: true, contentType: logoFile.type || undefined, cacheControl: "3600" });
+      if (upErr) {
+        setSaving(false);
+        return toast.error(`Não foi possível enviar a logo: ${upErr.message}`);
+      }
+      logo_url = path;
     }
     const { error } = await supabase.from("store_settings").update({
       store_name: s.store_name,
@@ -861,8 +1015,18 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Configurações salvas");
-    setLogoFile(null); load();
+    toast.success(logoFile ? "Configurações e logo salvas" : "Configurações salvas");
+    setLogoFile(null);
+    setS((prev: any) => ({ ...prev, logo_url }));
+    if (logo_url) setLogoPreview(await signedUrl("store-assets", logo_url));
+    load();
+  }
+
+  async function removeLogo() {
+    const { error } = await supabase.from("store_settings").update({ logo_url: null }).eq("tenant_id", tenantId);
+    if (error) return toast.error(error.message);
+    setLogoFile(null); setLogoPreview(""); setS({ ...s, logo_url: null });
+    toast.success("Logo removida");
   }
 
   const days: [string, string][] = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
@@ -876,13 +1040,17 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
         <div>
           <Label>Logo</Label>
           <div className="mt-2 flex items-center gap-3">
-            {logoPreview && <img src={logoPreview} className="size-16 rounded-lg border border-border object-cover" alt="" />}
+            {logoPreview && <img src={logoPreview} className="size-16 rounded-lg border border-border object-cover" alt="Logo atual da loja" />}
             <Input type="file" accept="image/*" onChange={(e) => {
               const f = e.target.files?.[0] || null;
               setLogoFile(f);
               if (f) setLogoPreview(URL.createObjectURL(f));
             }} />
+            {(logoPreview || s.logo_url) && (
+              <Button variant="ghost" size="sm" onClick={removeLogo}>Remover</Button>
+            )}
           </div>
+          {logoFile && <p className="mt-1 text-xs text-primary">Clique em “Salvar tudo” para aplicar a nova logo na loja.</p>}
         </div>
         <Field label="Sobre"><Textarea rows={3} value={s.about || ""} onChange={(e) => setS({ ...s, about: e.target.value })} /></Field>
       </div>
