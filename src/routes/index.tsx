@@ -183,7 +183,7 @@ function Landing() {
       <footer className="border-t border-border bg-secondary text-secondary-foreground">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black">A</div>
+            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black text-xs">ME</div>
             <span className="font-bold">Moda & Estilo</span>
           </div>
           <div className="flex flex-col items-center gap-1 md:flex-row md:gap-4">
