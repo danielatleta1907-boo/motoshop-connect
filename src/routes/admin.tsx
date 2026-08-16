@@ -893,13 +893,17 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
         <div>
           <Label>Logo</Label>
           <div className="mt-2 flex items-center gap-3">
-            {logoPreview && <img src={logoPreview} className="size-16 rounded-lg border border-border object-cover" alt="" />}
+            {logoPreview && <img src={logoPreview} className="size-16 rounded-lg border border-border object-cover" alt="Logo atual da loja" />}
             <Input type="file" accept="image/*" onChange={(e) => {
               const f = e.target.files?.[0] || null;
               setLogoFile(f);
               if (f) setLogoPreview(URL.createObjectURL(f));
             }} />
+            {(logoPreview || s.logo_url) && (
+              <Button variant="ghost" size="sm" onClick={removeLogo}>Remover</Button>
+            )}
           </div>
+          {logoFile && <p className="mt-1 text-xs text-primary">Clique em “Salvar tudo” para aplicar a nova logo na loja.</p>}
         </div>
         <Field label="Sobre"><Textarea rows={3} value={s.about || ""} onChange={(e) => setS({ ...s, about: e.target.value })} /></Field>
       </div>
