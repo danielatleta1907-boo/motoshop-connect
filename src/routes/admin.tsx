@@ -836,9 +836,16 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
     setSaving(true);
     let logo_url = s.logo_url;
     if (logoFile) {
-      const path = `${tenantId}/logo_${Date.now()}_${logoFile.name.replace(/[^a-z0-9.\-_]/gi, "")}`;
-      const { error } = await supabase.storage.from("store-assets").upload(path, logoFile, { upsert: true });
-      if (!error) logo_url = path;
+      const ext = (logoFile.name.split(".").pop() || "png").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const path = `${tenantId}/logo_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("store-assets")
+        .upload(path, logoFile, { upsert: true, contentType: logoFile.type || undefined, cacheControl: "3600" });
+      if (upErr) {
+        setSaving(false);
+        return toast.error(`Não foi possível enviar a logo: ${upErr.message}`);
+      }
+      logo_url = path;
     }
     const { error } = await supabase.from("store_settings").update({
       store_name: s.store_name,
@@ -861,8 +868,18 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Configurações salvas");
-    setLogoFile(null); load();
+    toast.success(logoFile ? "Configurações e logo salvas" : "Configurações salvas");
+    setLogoFile(null);
+    setS((prev: any) => ({ ...prev, logo_url }));
+    if (logo_url) setLogoPreview(await signedUrl("store-assets", logo_url));
+    load();
+  }
+
+  async function removeLogo() {
+    const { error } = await supabase.from("store_settings").update({ logo_url: null }).eq("tenant_id", tenantId);
+    if (error) return toast.error(error.message);
+    setLogoFile(null); setLogoPreview(""); setS({ ...s, logo_url: null });
+    toast.success("Logo removida");
   }
 
   const days: [string, string][] = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
