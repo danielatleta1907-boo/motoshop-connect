@@ -12,9 +12,9 @@ export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Vitrine da loja — Use Ame" },
+      { title: "Vitrine da loja — Moda & Estilo" },
       { name: "description", content: "Veja as peças disponíveis, tamanhos, brindes, horários e endereço para retirada no local." },
-      { property: "og:title", content: "Vitrine da loja — Use Ame" },
+      { property: "og:title", content: "Vitrine da loja — Moda & Estilo" },
       { property: "og:description", content: "Peças disponíveis, tamanhos, brindes e retirada no local." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

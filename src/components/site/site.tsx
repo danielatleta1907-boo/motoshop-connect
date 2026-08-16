@@ -47,7 +47,7 @@ export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { setti
             <div className="grid h-11 w-11 place-items-center rounded-lg bg-brand text-primary-foreground font-black">A</div>
           )}
           <div className="leading-tight">
-            <div className="text-base font-bold tracking-tight">{settings?.store_name ?? "Use Ame"}</div>
+            <div className="text-base font-bold tracking-tight">{settings?.store_name ?? "Moda & Estilo"}</div>
             <div className="hidden text-xs text-muted-foreground sm:block">
               {settings?.motivational_phrase ?? "Moda que combina com você."}
             </div>
@@ -133,7 +133,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-        © {new Date().getFullYear()} {settings.store_name} · Powered by Use Ame
+        © {new Date().getFullYear()} {settings.store_name} · Powered by Moda & Estilo
       </div>
     </footer>
   );

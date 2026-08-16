@@ -18,9 +18,9 @@ export const Route = createFileRoute("/produto/$id")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Detalhes da peça — Use Ame" },
+      { title: "Detalhes da peça — Moda & Estilo" },
       { name: "description", content: "Veja fotos, tamanho, tecido e valores desta peça e encomende para retirada na loja." },
-      { property: "og:title", content: "Detalhes da peça — Use Ame" },
+      { property: "og:title", content: "Detalhes da peça — Moda & Estilo" },
       { property: "og:description", content: "Fotos, tamanho, tecido e valores da peça, com encomenda e retirada na loja." },
       { property: "og:type", content: "product" },
       { name: "twitter:card", content: "summary_large_image" },

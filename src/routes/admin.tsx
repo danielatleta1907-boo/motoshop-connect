@@ -28,9 +28,9 @@ export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Painel da loja — Use Ame" },
+      { title: "Painel da loja — Moda & Estilo" },
       { name: "description", content: "Gerencie peças, encomendas, vendas, comprovantes e as configurações da sua loja de roupas." },
-      { property: "og:title", content: "Painel da loja — Use Ame" },
+      { property: "og:title", content: "Painel da loja — Moda & Estilo" },
       { property: "og:description", content: "Gerencie peças, encomendas, vendas e configurações da sua loja." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -182,7 +182,7 @@ function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => v
           Olá, <strong>{email}</strong>. Seu cadastro foi recebido e está aguardando a liberação do administrador.
         </p>
         <p className="mt-3 text-sm text-white/70">
-          A liberação acontece em até <strong>12 horas</strong>. O uso do Use Ame é totalmente gratuito.
+          A liberação acontece em até <strong>12 horas</strong>. O uso do Moda & Estilo é totalmente gratuito.
         </p>
         <div className="mt-6 flex gap-2">
           <Link to="/" className="flex-1"><Button variant="outline" className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20">Voltar ao site</Button></Link>
