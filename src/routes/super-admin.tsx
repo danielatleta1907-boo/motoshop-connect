@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { brl } from "@/lib/format";
-import { sendPasswordReset, setUserPassword } from "@/lib/admin-users.functions";
+import { sendPasswordReset } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -279,7 +279,6 @@ function TenantsTab() {
   const [newPw, setNewPw] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const sendReset = useServerFn(sendPasswordReset);
-  const setPw = useServerFn(setUserPassword);
 
   async function load() {
     const { data } = await supabase
@@ -328,23 +327,24 @@ function TenantsTab() {
     if (!email) return toast.error("Este dono não tem e-mail cadastrado");
     if (!confirm(`Enviar e-mail de redefinição de senha para ${email}?`)) return;
     try {
-      await sendReset({ data: { email, redirectTo: `${window.location.origin}/reset-password` } });
+      await sendReset({ data: { email, redirectPath: "/reset-password" } });
       toast.success(`E-mail enviado para ${email}`);
     } catch (e: any) {
       toast.error(e?.message || "Falha ao enviar");
     }
   }
 
-  async function submitNewPw() {
+  async function submitPwByEmail() {
     if (!pwTarget) return;
-    if (newPw.length < 8) return toast.error("A senha precisa ter ao menos 8 caracteres");
+    const email = pwTarget.profiles?.email;
+    if (!email) return toast.error("Este dono não tem e-mail cadastrado");
     setPwBusy(true);
     try {
-      await setPw({ data: { userId: pwTarget.owner_id, password: newPw } });
-      toast.success("Senha atualizada. Repasse-a com segurança ao lojista e peça que ele troque no primeiro acesso.");
-      setPwTarget(null); setNewPw("");
+      await sendReset({ data: { email, redirectPath: "/reset-password" } });
+      toast.success(`Link de troca de senha enviado para ${email}. Só o titular da conta consegue concluir.`);
+      setPwTarget(null);
     } catch (e: any) {
-      toast.error(e?.message || "Falha ao definir senha");
+      toast.error(e?.message || "Falha ao enviar");
     } finally {
       setPwBusy(false);
     }
@@ -377,7 +377,7 @@ function TenantsTab() {
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
                   <Button size="sm" variant="outline" className="ml-1" onClick={() => resetPw(t)}><Mail className="mr-1 size-3.5" />Redefinir senha</Button>
-                  <Button size="sm" variant="outline" className="ml-1" onClick={() => { setPwTarget(t); setNewPw(""); }}><KeyRound className="mr-1 size-3.5" />Nova senha</Button>
+                  <Button size="sm" variant="outline" className="ml-1" onClick={() => { setPwTarget(t); setNewPw(""); }}><KeyRound className="mr-1 size-3.5" />Trocar senha</Button>
                   {t.status === "active"
                     ? <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
                     : <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
@@ -446,34 +446,22 @@ function TenantsTab() {
       <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setNewPw(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Definir nova senha — {pwTarget?.store_name}</DialogTitle>
+            <DialogTitle>Trocar senha — {pwTarget?.store_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-              <strong className="text-foreground">Atenção:</strong> por segurança nenhuma senha fica armazenada legível — nem para o super admin. Ao definir uma nova senha aqui, ela substitui a atual. Repasse ao lojista por um canal seguro e oriente-o a trocar no primeiro acesso.
+              <strong className="text-foreground">Como funciona:</strong> por segurança, ninguém — nem o super admin — pode
+              definir a senha de outra conta. Enviamos um link de troca para o e-mail do próprio lojista, e só ele consegue
+              concluir a alteração.
             </div>
             <div>
               <Label>Dono</Label>
               <div className="text-sm">{pwTarget?.profiles?.full_name} <span className="text-muted-foreground">({pwTarget?.profiles?.email})</span></div>
             </div>
-            <div>
-              <Label htmlFor="np">Nova senha (mín. 8 caracteres)</Label>
-              <Input id="np" type="text" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Digite ou cole uma senha forte" />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const bytes = new Uint8Array(12);
-                crypto.getRandomValues(bytes);
-                const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%";
-                setNewPw(Array.from(bytes, (b) => chars[b % chars.length]).join(""));
-              }}
-            >Gerar senha aleatória</Button>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => { setPwTarget(null); setNewPw(""); }}>Cancelar</Button>
-            <Button onClick={submitNewPw} disabled={pwBusy || newPw.length < 8}>{pwBusy ? "Salvando…" : "Salvar nova senha"}</Button>
+            <Button variant="ghost" onClick={() => setPwTarget(null)}>Cancelar</Button>
+            <Button onClick={submitPwByEmail} disabled={pwBusy}>{pwBusy ? "Enviando…" : "Enviar link de troca"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

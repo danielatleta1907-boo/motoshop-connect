@@ -603,6 +603,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      owns_tenant_folder: { Args: { object_name: string }; Returns: boolean }
       reject_subscriber: {
         Args: { p_proof_id: string; p_reason: string; p_user_id: string }
         Returns: undefined
