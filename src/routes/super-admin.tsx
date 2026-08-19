@@ -84,7 +84,7 @@ function SuperAdminPage() {
   );
 }
 
-/* ============ PENDENTES (cadastros novos + renovações) ============ */
+/* ============ PENDENTES (cadastros novos + pedidos de reativação) ============ */
 function PendingTab() {
   const [proofs, setProofs] = useState<any[]>([]);
   const [view, setView] = useState<any | null>(null);
@@ -131,7 +131,7 @@ function PendingTab() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Renovação confirmada!");
+    toast.success("Loja reativada!");
     setView(null); load();
   }
 
@@ -154,7 +154,7 @@ function PendingTab() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">Pendentes ({proofs.length})</h2>
-          <p className="text-sm text-muted-foreground">Novos cadastros e renovações aguardando aprovação.</p>
+          <p className="text-sm text-muted-foreground">Novos cadastros (gratuitos) e pedidos de reativação aguardando sua liberação.</p>
         </div>
         <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-2 size-4" />Atualizar</Button>
       </div>
@@ -163,11 +163,11 @@ function PendingTab() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Solicitante</TableHead><TableHead>Tipo</TableHead><TableHead>Loja</TableHead>
-            <TableHead>Valor</TableHead><TableHead>Meses</TableHead><TableHead>Data</TableHead>
+            <TableHead>Data</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {proofs.length === 0 && <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">Nenhuma solicitação pendente</TableCell></TableRow>}
+            {proofs.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Nenhuma solicitação pendente</TableCell></TableRow>}
             {proofs.map((p) => {
               const isNew = !p.tenant_id;
               return (
@@ -178,15 +178,13 @@ function PendingTab() {
                   </TableCell>
                   <TableCell>
                     <span className={`rounded-md px-2 py-1 text-xs font-bold uppercase ${isNew ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>
-                      {isNew ? "Novo" : "Renovação"}
+                      {isNew ? "Novo" : "Reativação"}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{isNew ? p.desired_store_name : p.tenants?.store_name}</div>
                     <div className="text-xs text-muted-foreground">/loja/{isNew ? p.desired_slug : p.tenants?.slug}</div>
                   </TableCell>
-                  <TableCell className="font-semibold">{brl(Number(p.amount))}</TableCell>
-                  <TableCell>{p.period_months}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => openProof(p)}>Analisar</Button>
@@ -208,11 +206,10 @@ function PendingTab() {
               <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
                 <div className="space-y-2 text-sm">
                   <Info label="Solicitante" v={`${view.profiles?.full_name || "—"} (${view.profiles?.email})`} />
-                  <Info label="Tipo" v={!view.tenant_id ? "Novo cadastro" : "Renovação"} />
+                  <Info label="Tipo" v={!view.tenant_id ? "Novo cadastro (gratuito)" : "Pedido de reativação"} />
                   <Info label="Loja" v={view.tenant_id ? view.tenants?.store_name : view.desired_store_name} />
                   <Info label="Slug" v={`/loja/${view.tenant_id ? view.tenants?.slug : view.desired_slug}`} />
-                  <Info label="Valor pago" v={brl(Number(view.amount))} />
-                  <Info label="Meses" v={String(view.period_months)} />
+                  <Info label="Acesso" v="Vitalício — sem mensalidade" />
                   {view.notes && <Info label="Obs. do lojista" v={view.notes} />}
                 </div>
                 <div className="space-y-2">
@@ -245,7 +242,7 @@ function PendingTab() {
                 </Button>
                 {view.tenant_id ? (
                   <Button onClick={() => renew(view)} disabled={busy} className="bg-brand text-primary-foreground hover:opacity-90">
-                    <Check className="mr-2 size-4" />Confirmar renovação
+                    <Check className="mr-2 size-4" />Reativar loja
                   </Button>
                 ) : (
                   <Button onClick={() => approveNew(view)} disabled={busy} className="bg-brand text-primary-foreground hover:opacity-90">
@@ -357,7 +354,7 @@ function TenantsTab() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Loja</TableHead><TableHead>Dono</TableHead><TableHead>Status</TableHead>
-            <TableHead>Vencimento</TableHead><TableHead>Slug</TableHead><TableHead className="text-right">Ações</TableHead>
+            <TableHead>Acesso</TableHead><TableHead>Slug</TableHead><TableHead className="text-right">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {list.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Nenhuma loja ainda</TableCell></TableRow>}
@@ -372,7 +369,7 @@ function TenantsTab() {
                     t.status === "pending" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
                   }`}>{t.status}</span>
                 </TableCell>
-                <TableCell className="text-sm">{t.subscription_due_date ? new Date(t.subscription_due_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">Vitalício</TableCell>
                 <TableCell><Link to="/loja/$slug" params={{ slug: t.slug }} className="text-xs text-primary hover:underline">/loja/{t.slug}</Link></TableCell>
                 <TableCell className="text-right">
                   <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
@@ -487,7 +484,7 @@ function AllProofsTab() {
           {list.map((p) => (
             <TableRow key={p.id}>
               <TableCell>{p.profiles?.email}</TableCell>
-              <TableCell>{p.desired_slug ? "Novo" : "Renovação"}</TableCell>
+              <TableCell>{p.desired_slug ? "Novo" : "Reativação"}</TableCell>
               <TableCell>{brl(Number(p.amount))}</TableCell>
               <TableCell>{p.period_months}</TableCell>
               <TableCell><span className="rounded-md bg-muted px-2 py-1 text-xs font-bold uppercase">{p.status}</span></TableCell>
