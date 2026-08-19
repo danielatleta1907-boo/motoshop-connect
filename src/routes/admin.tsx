@@ -546,6 +546,11 @@ function StockTab({ tenantId }: { tenantId: string }) {
                 </span>
               </div>
               <div className="mt-2 font-bold">{brl(Number(m.price_cash))}</div>
+              <div className={`mt-1 text-xs font-semibold ${Number(m.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                {Number(m.stock_quantity) > 0
+                  ? `${m.stock_quantity} ${Number(m.stock_quantity) === 1 ? "peça disponível" : "peças disponíveis"}`
+                  : "Sem estoque"}
+              </div>
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => { setEditing(m); setOpen(true); }}><Edit2 className="size-3.5" /></Button>
                 <Button size="sm" variant="outline" onClick={() => remove(m.id)}><Trash2 className="size-3.5" /></Button>

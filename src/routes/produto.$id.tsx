@@ -140,6 +140,12 @@ function ProductDetail() {
             {item.gender && <Badge icon={<Users className="size-4" />}>{item.gender}</Badge>}
           </div>
 
+          <div className={`mt-4 inline-flex items-center rounded-lg border px-3 py-2 text-sm font-semibold ${Number(item.stock_quantity) > 0 ? "border-primary/40 bg-primary/10 text-foreground" : "border-border bg-muted text-muted-foreground"}`}>
+            {Number(item.stock_quantity) > 0
+              ? `${item.stock_quantity} ${Number(item.stock_quantity) === 1 ? "peça disponível" : "peças disponíveis"}`
+              : "Esgotado"}
+          </div>
+
           {item.gift && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-semibold">
               <Gift className="size-4 text-primary" /> Vem com brinde: {item.gift}
