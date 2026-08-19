@@ -190,6 +190,11 @@ export function ProductCard({ item, cover, slug }: { item: any; cover: string; s
         {item.brand && <div className="text-xs font-semibold uppercase tracking-wider text-primary">{item.brand}</div>}
         <h3 className="mt-0.5 truncate text-lg font-bold">{item.model}</h3>
         {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+        <div className={`mt-1 text-xs font-semibold ${Number(item.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
+          {Number(item.stock_quantity) > 0
+            ? `${item.stock_quantity} ${Number(item.stock_quantity) === 1 ? "peça disponível" : "peças disponíveis"}`
+            : "Esgotado"}
+        </div>
         <div className="mt-3 text-xl font-extrabold text-foreground">
           {Number(item.price_cash).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </div>
