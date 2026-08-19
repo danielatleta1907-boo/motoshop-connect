@@ -252,8 +252,8 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
     const cur = await ensureCycle();
     setCycle(cur);
 
-    const [{ count: stock }, { count: pending }, { data: sold }, { data: costs }, { data: closed }] = await Promise.all([
-      supabase.from("motorcycles").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "available"),
+    const [{ data: stockRows }, { count: pending }, { data: sold }, { data: costs }, { data: closed }] = await Promise.all([
+      supabase.from("motorcycles").select("stock_quantity").eq("tenant_id", tenantId).eq("status", "available"),
       supabase.from("orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "pending"),
       supabase.from("orders").select("sold_price, updated_at, motorcycle_id").eq("tenant_id", tenantId).eq("status", "sold"),
       supabase.from("product_costs").select("motorcycle_id, cost_price").eq("tenant_id", tenantId),
@@ -283,7 +283,8 @@ function DashboardTab({ tenantId }: { tenantId: string }) {
       byM[k].count += 1;
     });
 
-    setStats({ stock: stock || 0, pending: pending || 0, sold: soldCount, revenue, cost });
+    const stock = (stockRows ?? []).reduce((sum: number, r: any) => sum + (Number(r.stock_quantity) || 0), 0);
+    setStats({ stock, pending: pending || 0, sold: soldCount, revenue, cost });
     setByMonth(Object.entries(byM).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v })));
   }
 
