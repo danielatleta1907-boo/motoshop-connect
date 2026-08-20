@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
-import { brl } from "@/lib/format";
 import { sendPasswordReset } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -405,8 +404,7 @@ function TenantsTab() {
                 <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
                   <div className="space-y-2 text-sm">
                     <Info label="Status do comprovante" v={proofView.status} />
-                    <Info label="Valor" v={brl(Number(proofView.amount))} />
-                    <Info label="Meses" v={String(proofView.period_months)} />
+                    <Info label="Acesso" v="Vitalício — sem mensalidade" />
                     <Info label="Data de envio" v={new Date(proofView.created_at).toLocaleString("pt-BR")} />
                     {proofView.notes && <Info label="Observação" v={proofView.notes} />}
                   </div>
@@ -477,16 +475,14 @@ function AllProofsTab() {
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <Table>
         <TableHeader><TableRow>
-          <TableHead>Usuário</TableHead><TableHead>Tipo</TableHead><TableHead>Valor</TableHead>
-          <TableHead>Meses</TableHead><TableHead>Status</TableHead><TableHead>Data</TableHead>
+          <TableHead>Usuário</TableHead><TableHead>Tipo</TableHead>
+          <TableHead>Status</TableHead><TableHead>Data</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {list.map((p) => (
             <TableRow key={p.id}>
               <TableCell>{p.profiles?.email}</TableCell>
               <TableCell>{p.desired_slug ? "Novo" : "Reativação"}</TableCell>
-              <TableCell>{brl(Number(p.amount))}</TableCell>
-              <TableCell>{p.period_months}</TableCell>
               <TableCell><span className="rounded-md bg-muted px-2 py-1 text-xs font-bold uppercase">{p.status}</span></TableCell>
               <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
             </TableRow>
