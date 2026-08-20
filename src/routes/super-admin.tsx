@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
-import { brl } from "@/lib/format";
 import { sendPasswordReset } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
