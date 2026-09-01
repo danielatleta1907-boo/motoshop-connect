@@ -168,18 +168,53 @@ function ShareStoreButton({ slug, name }: { slug: string; name: string }) {
   );
 }
 
-function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+function AutoProvisionScreen({ email, onDone, onSignOut }: { email: string; onDone: () => void; onSignOut: () => void }) {
+  const [storeName, setStoreName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setBusy(true);
+      const { error } = await supabase.rpc("self_provision_store", { p_store_name: "Minha loja", p_slug: "minha-loja" });
+      if (cancelled) return;
+      setBusy(false);
+      if (error) { setFailed(true); return; }
+      onDone();
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function retry() {
+    setBusy(true);
+    const { error } = await supabase.rpc("self_provision_store", {
+      p_store_name: storeName.trim() || "Minha loja",
+      p_slug: storeName.trim() || "minha-loja",
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    onDone();
+  }
+
   return (
     <div className="grid min-h-screen place-items-center bg-hero p-6 text-center text-white">
       <div className="max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 backdrop-blur">
         <Clock className="mx-auto mb-3 size-12 text-primary-foreground" />
-        <h2 className="text-2xl font-bold">Aguardando aprovação</h2>
+        <h2 className="text-2xl font-bold">{failed ? "Vamos criar sua loja" : "Preparando sua loja…"}</h2>
         <p className="mt-2 text-white/80">
-          Olá, <strong>{email}</strong>. Seu cadastro foi recebido e está aguardando a liberação do administrador.
+          Olá, <strong>{email}</strong>. {failed ? "Confirme o nome da sua loja para continuar." : "Sua loja está sendo criada automaticamente — é gratuito e imediato."}
         </p>
-        <p className="mt-3 text-sm text-white/70">
-          A liberação acontece em até <strong>12 horas</strong>. O uso do Moda & Estilo é totalmente gratuito.
-        </p>
+        {failed && (
+          <div className="mt-4 space-y-2 text-left">
+            <Label className="text-white">Nome da loja</Label>
+            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Ex.: Ateliê Bella" className="bg-white text-foreground" />
+            <Button onClick={retry} disabled={busy} className="w-full bg-brand text-primary-foreground hover:opacity-90">
+              {busy ? "Criando…" : "Criar minha loja"}
+            </Button>
+          </div>
+        )}
         <div className="mt-6 flex gap-2">
           <Link to="/" className="flex-1"><Button variant="outline" className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20">Voltar ao site</Button></Link>
           <Button onClick={onSignOut} variant="ghost" className="text-white">Sair</Button>
@@ -188,6 +223,7 @@ function PendingScreen({ email, onSignOut }: { email: string; onSignOut: () => v
     </div>
   );
 }
+
 
 function SuspendedScreen({ tenant, email, onRenew, onSignOut }: any) {
   return (
