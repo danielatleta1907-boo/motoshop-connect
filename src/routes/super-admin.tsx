@@ -13,13 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import {
-  ShieldCheck, LogOut, Inbox, Check, X as XIcon, FileText, Store, RefreshCw,
+  ShieldCheck, LogOut, FileText, Store,
   AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt, KeyRound, Mail,
 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Super Admin — MotoStore" }] }),
+  head: () => ({ meta: [{ title: "Super Admin — Moda & Estilo" }] }),
   component: SuperAdminPage,
 });
 
@@ -53,7 +53,7 @@ function SuperAdminPage() {
           <div className="flex items-center gap-3">
             <div className="grid size-9 place-items-center rounded-md bg-graphite text-white"><ShieldCheck className="size-5" /></div>
             <div>
-              <div className="text-sm font-bold">Super Admin · MotoStore SaaS</div>
+              <div className="text-sm font-bold">Super Admin · Moda & Estilo</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
           </div>
@@ -67,192 +67,16 @@ function SuperAdminPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <Tabs defaultValue="pending">
+        <Tabs defaultValue="tenants">
           <TabsList>
-            <TabsTrigger value="pending"><Inbox className="mr-2 size-4" />Pendentes</TabsTrigger>
             <TabsTrigger value="tenants"><Store className="mr-2 size-4" />Lojas</TabsTrigger>
             <TabsTrigger value="proofs"><FileText className="mr-2 size-4" />Histórico de comprovantes</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="mt-6"><PendingTab /></TabsContent>
           <TabsContent value="tenants" className="mt-6"><TenantsTab /></TabsContent>
           <TabsContent value="proofs" className="mt-6"><AllProofsTab /></TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
-}
-
-/* ============ PENDENTES (cadastros novos + pedidos de reativação) ============ */
-function PendingTab() {
-  const [proofs, setProofs] = useState<any[]>([]);
-  const [view, setView] = useState<any | null>(null);
-  const [fileUrl, setFileUrl] = useState<string>("");
-  const [busy, setBusy] = useState(false);
-
-  async function load() {
-    const { data, error } = await supabase
-      .from("payment_proofs")
-      .select("*, profiles!payment_proofs_user_profile_fkey(full_name, email), tenants:tenant_id(id, slug, store_name, status)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    if (error) { toast.error(error.message); return; }
-    setProofs((data ?? []).map((p: any) => ({ ...p, profiles: p.profiles })));
-  }
-  useEffect(() => { load(); }, []);
-
-  async function openProof(p: any) {
-    setView(p);
-    if (p.file_url) setFileUrl(await signedUrl("payment-proofs", p.file_url, 60 * 60));
-  }
-
-  async function approveNew(p: any) {
-    setBusy(true);
-    const { error } = await supabase.rpc("approve_subscriber", {
-      p_user_id: p.user_id,
-      p_slug: p.desired_slug,
-      p_store_name: p.desired_store_name,
-      p_proof_id: p.id,
-      p_months: p.period_months || 1,
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Lojista aprovado! Loja ativada.");
-    setView(null); load();
-  }
-
-  async function renew(p: any) {
-    setBusy(true);
-    const { error } = await supabase.rpc("renew_tenant", {
-      p_tenant_id: p.tenant_id || p.tenants?.id,
-      p_proof_id: p.id,
-      p_months: p.period_months || 1,
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Loja reativada!");
-    setView(null); load();
-  }
-
-  async function reject(p: any) {
-    const reason = prompt("Motivo da rejeição (será registrado):");
-    if (reason === null) return;
-    setBusy(true);
-    const isNew = !p.tenant_id && p.desired_slug;
-    const { error } = isNew
-      ? await supabase.rpc("reject_subscriber", { p_user_id: p.user_id, p_proof_id: p.id, p_reason: reason })
-      : await supabase.from("payment_proofs").update({ status: "rejected", reviewer_notes: reason }).eq("id", p.id);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Comprovante rejeitado");
-    setView(null); load();
-  }
-
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Pendentes ({proofs.length})</h2>
-          <p className="text-sm text-muted-foreground">Novos cadastros (gratuitos) e pedidos de reativação aguardando sua liberação.</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-2 size-4" />Atualizar</Button>
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader><TableRow>
-            <TableHead>Solicitante</TableHead><TableHead>Tipo</TableHead><TableHead>Loja</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow></TableHeader>
-          <TableBody>
-            {proofs.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Nenhuma solicitação pendente</TableCell></TableRow>}
-            {proofs.map((p) => {
-              const isNew = !p.tenant_id;
-              return (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <div className="font-semibold">{p.profiles?.full_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground">{p.profiles?.email}</div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`rounded-md px-2 py-1 text-xs font-bold uppercase ${isNew ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"}`}>
-                      {isNew ? "Novo" : "Reativação"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{isNew ? p.desired_store_name : p.tenants?.store_name}</div>
-                    <div className="text-xs text-muted-foreground">/loja/{isNew ? p.desired_slug : p.tenants?.slug}</div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => openProof(p)}>Analisar</Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Dialog open={!!view} onOpenChange={(o) => { if (!o) { setView(null); setFileUrl(""); } }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-          {view && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Analisar comprovante</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
-                <div className="space-y-2 text-sm">
-                  <Info label="Solicitante" v={`${view.profiles?.full_name || "—"} (${view.profiles?.email})`} />
-                  <Info label="Tipo" v={!view.tenant_id ? "Novo cadastro (gratuito)" : "Pedido de reativação"} />
-                  <Info label="Loja" v={view.tenant_id ? view.tenants?.store_name : view.desired_store_name} />
-                  <Info label="Slug" v={`/loja/${view.tenant_id ? view.tenants?.slug : view.desired_slug}`} />
-                  <Info label="Acesso" v="Vitalício — sem mensalidade" />
-                  {view.notes && <Info label="Obs. do lojista" v={view.notes} />}
-                </div>
-                <div className="space-y-2">
-                  {fileUrl ? (
-                    <>
-                      {view.file_type === "image" ? (
-                        <a href={fileUrl} target="_blank" rel="noreferrer">
-                          <img src={fileUrl} alt="comprovante" className="w-full rounded-md border border-border" />
-                        </a>
-                      ) : view.file_type === "pdf" ? (
-                        <iframe src={fileUrl} className="h-72 w-full rounded-md border border-border" title="comprovante" />
-                      ) : (
-                        <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Pré-visualização indisponível — use os botões abaixo</div>
-                      )}
-                      <div className="flex gap-2">
-                        <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1">
-                          <Button variant="outline" className="w-full"><ExternalLink className="mr-2 size-4" />Abrir em nova aba</Button>
-                        </a>
-                        <a href={fileUrl} download className="flex-1">
-                          <Button variant="outline" className="w-full">Baixar</Button>
-                        </a>
-                      </div>
-                    </>
-                  ) : <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Sem arquivo</div>}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => reject(view)} disabled={busy} className="text-destructive">
-                  <XIcon className="mr-2 size-4" />Rejeitar
-                </Button>
-                {view.tenant_id ? (
-                  <Button onClick={() => renew(view)} disabled={busy} className="bg-brand text-primary-foreground hover:opacity-90">
-                    <Check className="mr-2 size-4" />Reativar loja
-                  </Button>
-                ) : (
-                  <Button onClick={() => approveNew(view)} disabled={busy} className="bg-brand text-primary-foreground hover:opacity-90">
-                    <Check className="mr-2 size-4" />Aprovar e ativar loja
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -348,7 +172,13 @@ function TenantsTab() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold">Lojas ({list.length})</h2>
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Lojas ({list.length})</h2>
+        <p className="text-sm text-muted-foreground">
+          Cadastro é automático — nenhuma aprovação é necessária. Use esta área apenas para reenviar link de
+          recuperação de senha (quando a lojista não conseguir pelo e-mail dela) e para suspender ou reativar lojas.
+        </p>
+      </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader><TableRow>
