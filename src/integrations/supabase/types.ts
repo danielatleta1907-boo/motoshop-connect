@@ -612,6 +612,10 @@ export type Database = {
         Args: { p_months?: number; p_proof_id: string; p_tenant_id: string }
         Returns: undefined
       }
+      self_provision_store: {
+        Args: { p_slug: string; p_store_name: string }
+        Returns: string
+      }
       suspend_overdue_tenants: { Args: never; Returns: number }
     }
     Enums: {
