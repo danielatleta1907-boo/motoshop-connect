@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { toast } from "sonner";
-import { Lock, KeyRound, Sparkles, ArrowLeft } from "lucide-react";
+import { Lock, KeyRound, Sparkles, ArrowLeft, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
@@ -31,10 +30,12 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [reqOpen, setReqOpen] = useState(false);
   const [tab, setTab] = useState("signup");
+  const [forgot, setForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -42,9 +43,7 @@ function AuthPage() {
       navigate({ to: "/super-admin" });
       return;
     }
-    if (role === "admin" && tenant?.status === "active") {
-      navigate({ to: "/admin" });
-    }
+    if (tenant) navigate({ to: "/admin" });
   }, [user, role, tenant, navigate]);
 
   async function signIn() {
@@ -60,14 +59,41 @@ function AuthPage() {
 
   async function signUp() {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(), password,
       options: { data: { full_name: name }, emailRedirectTo: `${window.location.origin}/auth` },
+    });
+    if (error) { setLoading(false); return toast.error(error.message); }
+
+    // Sem sessão (confirmação de e-mail ativa) → avisa e para aqui.
+    if (!data.session) {
+      setLoading(false);
+      toast.success("Conta criada! Confirme seu e-mail para entrar na sua loja.", { duration: 8000 });
+      return;
+    }
+
+    const { error: provErr } = await supabase.rpc("self_provision_store", {
+      p_store_name: storeName.trim() || name.trim() || "Minha loja",
+      p_slug: storeName.trim() || name.trim() || "minha-loja",
+    });
+    setLoading(false);
+    if (provErr) return toast.error(provErr.message);
+    toast.success("Loja criada! Já pode começar a cadastrar suas peças.");
+    await reload();
+    navigate({ to: "/admin" });
+  }
+
+  async function sendRecovery() {
+    const mail = forgotEmail.trim();
+    if (!mail) return toast.error("Informe o e-mail cadastrado na sua loja");
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(mail, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Conta criada! Agora envie a solicitação da sua loja.");
-    setReqOpen(true);
+    toast.success(`Enviamos um link de recuperação para ${mail}. Confira sua caixa de entrada e o spam.`, { duration: 9000 });
+    setForgot(false);
   }
 
   return (
@@ -95,41 +121,63 @@ function AuthPage() {
             </div>
           </div>
 
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signup">Criar conta</TabsTrigger>
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signup" className="mt-5 space-y-3">
-              <p className="rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
-                <Sparkles className="mr-1 inline size-3.5 text-primary" />
-                O uso é gratuito. Crie sua conta, envie a solicitação da loja e aguarde a liberação do administrador (até 12 horas).
+          {forgot ? (
+            <div className="space-y-3">
+              <h2 className="text-lg font-bold">Esqueci minha senha</h2>
+              <p className="text-sm text-muted-foreground">
+                Digite o e-mail que você cadastrou na sua loja. Enviaremos um link para você criar uma nova senha.
               </p>
-              <div><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><Label>Senha (mín. 6 caracteres)</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-              <Button onClick={signUp} disabled={loading || !email || !password || !name} className="w-full bg-brand text-primary-foreground hover:opacity-90">
-                <Sparkles className="mr-2 size-4" /> Criar conta grátis
+              <div><Label>E-mail cadastrado</Label><Input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} /></div>
+              <Button onClick={sendRecovery} disabled={loading || !forgotEmail.trim()} className="w-full bg-brand text-primary-foreground hover:opacity-90">
+                <Mail className="mr-2 size-4" /> {loading ? "Enviando…" : "Enviar link de recuperação"}
               </Button>
-              <p className="text-xs text-muted-foreground">A 1ª conta criada vira <strong>administrador</strong> da plataforma.</p>
-            </TabsContent>
+              <Button variant="ghost" className="w-full" onClick={() => setForgot(false)}>Voltar ao login</Button>
+              <p className="text-xs text-muted-foreground">
+                Não recebeu o e-mail? Fale com o administrador da plataforma — ele pode reenviar o link de recuperação.
+              </p>
+            </div>
+          ) : (
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signup">Criar conta</TabsTrigger>
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="login" className="mt-5">
-              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); signIn(); }}>
-                <div><Label>E-mail</Label><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div><Label>Senha</Label><Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-                {authError && <p className="text-sm font-medium text-destructive">{authError}</p>}
-                <Button type="submit" disabled={loading || !email.trim() || !password} className="w-full bg-brand text-primary-foreground hover:opacity-90">
-                  <KeyRound className="mr-2 size-4" /> {loading ? "Entrando…" : "Entrar"}
+              <TabsContent value="signup" className="mt-5 space-y-3">
+                <p className="rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+                  <Sparkles className="mr-1 inline size-3.5 text-primary" />
+                  100% gratuito e liberação imediata: criou a conta, sua loja já está pronta para usar.
+                </p>
+                <div><Label>Seu nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+                <div>
+                  <Label>Nome da loja</Label>
+                  <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Ex.: Ateliê Bella" />
+                </div>
+                <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <div><Label>Senha (mín. 6 caracteres)</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+                <Button onClick={signUp} disabled={loading || !email || !password || !name} className="w-full bg-brand text-primary-foreground hover:opacity-90">
+                  <Sparkles className="mr-2 size-4" /> {loading ? "Criando…" : "Criar conta e minha loja"}
                 </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+                <p className="text-xs text-muted-foreground">A 1ª conta criada vira <strong>administrador</strong> da plataforma.</p>
+              </TabsContent>
+
+              <TabsContent value="login" className="mt-5">
+                <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); signIn(); }}>
+                  <div><Label>E-mail</Label><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                  <div><Label>Senha</Label><Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+                  {authError && <p className="text-sm font-medium text-destructive">{authError}</p>}
+                  <Button type="submit" disabled={loading || !email.trim() || !password} className="w-full bg-brand text-primary-foreground hover:opacity-90">
+                    <KeyRound className="mr-2 size-4" /> {loading ? "Entrando…" : "Entrar"}
+                  </Button>
+                  <button type="button" onClick={() => { setForgot(true); setForgotEmail(email); }} className="w-full text-center text-xs font-semibold text-primary hover:underline">
+                    Esqueci minha senha
+                  </button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
-
-      <SubscribeDialog open={reqOpen} onOpenChange={setReqOpen} mode="new" onSubmitted={reload} />
     </div>
   );
 }

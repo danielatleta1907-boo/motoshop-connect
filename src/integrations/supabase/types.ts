@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -611,6 +611,10 @@ export type Database = {
       renew_tenant: {
         Args: { p_months?: number; p_proof_id: string; p_tenant_id: string }
         Returns: undefined
+      }
+      self_provision_store: {
+        Args: { p_slug: string; p_store_name: string }
+        Returns: string
       }
       suspend_overdue_tenants: { Args: never; Returns: number }
     }

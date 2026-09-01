@@ -1,7 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Shirt, BarChart3, Camera, MapPin, ShieldCheck, Smartphone, MessageSquare,
@@ -23,16 +21,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const [reqOpen, setReqOpen] = useState(false);
   const { user, tenant } = useAuth();
   const navigate = useNavigate();
 
   function clickStart() {
-    if (!user) {
-      navigate({ to: "/auth" });
-      return;
-    }
-    setReqOpen(true);
+    navigate({ to: user ? "/admin" : "/auth" });
   }
 
   return (
@@ -153,7 +146,7 @@ function Landing() {
             <Button size="lg" className="mt-8 w-full bg-brand text-primary-foreground hover:opacity-90" onClick={clickStart}>
               <Sparkles className="mr-2 size-5" /> Quero minha loja
             </Button>
-            <p className="mt-3 text-xs opacity-60">Liberação em até 12 horas após a análise do administrador</p>
+            <p className="mt-3 text-xs opacity-60">Liberação imediata — criou a conta, a loja já é sua</p>
           </div>
         </div>
       </section>
@@ -163,8 +156,8 @@ function Landing() {
         <h2 className="text-3xl font-extrabold md:text-4xl">Perguntas frequentes</h2>
         <div className="mt-8 space-y-4">
           {[
-            ["Quanto custa?", "Nada. O Moda & Estilo é gratuito para as lojas cadastradas. Você só precisa criar sua conta e aguardar a liberação do administrador."],
-            ["Como funciona a liberação?", "Você cria a conta, envia a solicitação com o nome da sua loja e o administrador aprova. A liberação acontece em até 12 horas."],
+            ["Quanto custa?", "Nada. O Moda & Estilo é gratuito. Basta criar sua conta e a loja já fica disponível na hora."],
+            ["Como funciona a liberação?", "Não existe espera: você cria a conta com e-mail e senha e já entra no painel da sua loja."],
             ["Como o cliente compra?", "Ele escolhe a peça na vitrine, envia a encomenda ou chama no WhatsApp e retira no local combinado com a loja."],
             ["Posso mudar as cores e a logo?", "Sim. No painel da loja você edita logo, frase, cores (inclusive degradê), endereço, horários e WhatsApp."],
             ["Meus dados ficam isolados?", "Sim. Cada loja só acessa suas próprias peças, vendas e comprovantes."],
@@ -203,7 +196,6 @@ function Landing() {
         </div>
       </footer>
 
-      <SubscribeDialog open={reqOpen} onOpenChange={setReqOpen} mode="new" />
     </div>
   );
 }
