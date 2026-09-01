@@ -66,15 +66,11 @@ function AdminPage() {
     );
   }
 
-  // Sem tenant ainda → aguardando aprovação
+  // Sem loja ainda → cria automaticamente (sem aprovação de ninguém)
   if (!tenant || role !== "admin") {
-    return (
-      <PendingScreen
-        email={user.email!}
-        onSignOut={() => signOut().then(() => navigate({ to: "/auth" }))}
-      />
-    );
+    return <AutoProvisionScreen email={user.email!} onDone={reload} onSignOut={() => signOut().then(() => navigate({ to: "/auth" }))} />;
   }
+
 
   // Suspenso por atraso
   if (tenant.status === "suspended" || tenant.status === "cancelled") {
