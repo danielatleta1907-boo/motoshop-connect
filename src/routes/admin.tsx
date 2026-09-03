@@ -115,7 +115,10 @@ function AdminPage() {
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="dashboard"><TrendingUp className="mr-2 size-4" />Painel</TabsTrigger>
             <TabsTrigger value="stock"><Shirt className="mr-2 size-4" />Peças</TabsTrigger>
-            <TabsTrigger value="leads"><Users className="mr-2 size-4" />Interessados</TabsTrigger>
+            <TabsTrigger value="leads" className="relative">
+              <Users className="mr-2 size-4" />Interessados
+              <NewLeadsBadge tenantId={tenant.id} />
+            </TabsTrigger>
             <TabsTrigger value="sold"><CheckCircle2 className="mr-2 size-4" />Vendidos</TabsTrigger>
             <TabsTrigger value="receipts"><FileText className="mr-2 size-4" />Comprovantes</TabsTrigger>
             <TabsTrigger value="settings"><Cog className="mr-2 size-4" />Configurações</TabsTrigger>
