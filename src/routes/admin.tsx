@@ -772,7 +772,109 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 /* ============ LEADS ============ */
 type OrderStatus = "pending" | "contacted" | "sold" | "cancelled";
 function LeadsTab() { return <OrdersList filterStatus={["pending", "contacted"]} title="Interessados" allowSell />; }
-function SoldTab() { return <OrdersList filterStatus={["sold"]} title="Vendidos" />; }
+function SoldTab() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("*, motorcycles(brand, model, piece_type, size, price_cash)")
+        .eq("status", "sold")
+        .order("updated_at", { ascending: false });
+      setOrders(data ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const months = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; items: any[]; total: number }>();
+    for (const o of orders) {
+      const d = new Date(o.updated_at || o.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      if (!map.has(key)) map.set(key, { key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [], total: 0 });
+      const g = map.get(key)!;
+      g.items.push(o);
+      g.total += Number(o.sold_price) || 0;
+    }
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [orders]);
+
+  const grandTotal = useMemo(() => orders.reduce((s, o) => s + (Number(o.sold_price) || 0), 0), [orders]);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-bold">Vendidos ({orders.length})</h2>
+          <p className="text-xs text-muted-foreground">Histórico permanente, uma pasta por mês. Nada é apagado.</p>
+        </div>
+        <div className="text-sm text-muted-foreground">Total geral: <span className="font-bold text-foreground">{brl(grandTotal)}</span></div>
+      </div>
+
+      {loading && <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">Carregando…</div>}
+      {!loading && months.length === 0 && (
+        <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">Nenhuma venda registrada ainda</div>
+      )}
+
+      <Accordion type="multiple" defaultValue={months.slice(0, 1).map((m) => m.key)} className="space-y-3">
+        {months.map((m) => (
+          <AccordionItem key={m.key} value={m.key} className="overflow-hidden rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex w-full flex-wrap items-center justify-between gap-2 pr-2 text-left">
+                <span className="flex items-center gap-2 font-semibold">
+                  <CalendarDays className="size-4 text-primary" />
+                  {m.label}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{m.items.length} venda{m.items.length > 1 ? "s" : ""}</span>
+                </span>
+                <span className="text-sm font-bold text-primary">{brl(m.total)}</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="overflow-x-auto pb-3">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead><TableHead>Contato</TableHead><TableHead>Peça</TableHead>
+                      <TableHead>Data e hora</TableHead><TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {m.items.map((o) => {
+                      const d = new Date(o.updated_at || o.created_at);
+                      return (
+                        <TableRow key={o.id}>
+                          <TableCell>
+                            <div className="font-semibold">{o.customer_name}</div>
+                            {o.message && <div className="text-xs text-muted-foreground">{o.message}</div>}
+                          </TableCell>
+                          <TableCell><div className="text-sm">{o.customer_phone}</div><div className="text-xs text-muted-foreground">{o.customer_email}</div></TableCell>
+                          <TableCell>
+                            <div className="text-sm font-medium">{o.motorcycles?.model}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {[o.motorcycles?.piece_type, o.motorcycles?.size ? `Tam. ${o.motorcycles.size}` : null].filter(Boolean).join(" · ")}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            <div>{d.toLocaleDateString("pt-BR")}</div>
+                            <div>{d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-primary">{brl(Number(o.sold_price) || 0)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
+}
 
 function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderStatus[]; title: string; allowSell?: boolean }) {
   const [orders, setOrders] = useState<any[]>([]);
