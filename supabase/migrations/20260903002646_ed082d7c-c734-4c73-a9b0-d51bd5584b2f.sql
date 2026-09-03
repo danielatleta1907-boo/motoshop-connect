@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.tg_order_sold_decrement_stock() FROM PUBLIC, anon, authenticated;
