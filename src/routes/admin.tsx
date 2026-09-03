@@ -1300,3 +1300,33 @@ function ThemeColorField({
     </div>
   );
 }
+
+function NewLeadsBadge({ tenantId }: { tenantId: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      const { count: c } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending");
+      if (active) setCount(c || 0);
+    }
+    load();
+    const timer = setInterval(load, 15000);
+    const channel = supabase
+      .channel(`orders-badge-${tenantId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `tenant_id=eq.${tenantId}` }, () => load())
+      .subscribe();
+    return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
+  }, [tenantId]);
+
+  if (count <= 0) return null;
+  return (
+    <span className="ml-2 grid min-w-5 place-items-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
