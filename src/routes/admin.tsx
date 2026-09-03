@@ -115,7 +115,10 @@ function AdminPage() {
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="dashboard"><TrendingUp className="mr-2 size-4" />Painel</TabsTrigger>
             <TabsTrigger value="stock"><Shirt className="mr-2 size-4" />Peças</TabsTrigger>
-            <TabsTrigger value="leads"><Users className="mr-2 size-4" />Interessados</TabsTrigger>
+            <TabsTrigger value="leads" className="relative">
+              <Users className="mr-2 size-4" />Interessados
+              <NewLeadsBadge tenantId={tenant.id} />
+            </TabsTrigger>
             <TabsTrigger value="sold"><CheckCircle2 className="mr-2 size-4" />Vendidos</TabsTrigger>
             <TabsTrigger value="receipts"><FileText className="mr-2 size-4" />Comprovantes</TabsTrigger>
             <TabsTrigger value="settings"><Cog className="mr-2 size-4" />Configurações</TabsTrigger>
@@ -1295,5 +1298,35 @@ function ThemeColorField({
         </div>
       )}
     </div>
+  );
+}
+
+function NewLeadsBadge({ tenantId }: { tenantId: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      const { count: c } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending");
+      if (active) setCount(c || 0);
+    }
+    load();
+    const timer = setInterval(load, 15000);
+    const channel = supabase
+      .channel(`orders-badge-${tenantId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `tenant_id=eq.${tenantId}` }, () => load())
+      .subscribe();
+    return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
+  }, [tenantId]);
+
+  if (count <= 0) return null;
+  return (
+    <span className="ml-2 grid min-w-5 place-items-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }
