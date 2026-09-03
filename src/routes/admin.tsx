@@ -1311,7 +1311,7 @@ function NewLeadsBadge({ tenantId }: { tenantId: string }) {
         .from("orders")
         .select("*", { count: "exact", head: true })
         .eq("tenant_id", tenantId)
-        .eq("status", "pending");
+        .in("status", ["pending", "contacted"]);
       if (active) setCount(c || 0);
     }
     load();
@@ -1325,7 +1325,7 @@ function NewLeadsBadge({ tenantId }: { tenantId: string }) {
 
   if (count <= 0) return null;
   return (
-    <span className="ml-2 grid min-w-5 place-items-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+    <span className="ml-2 grid min-w-[22px] place-items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-md animate-pulse">
       {count > 99 ? "99+" : count}
     </span>
   );
