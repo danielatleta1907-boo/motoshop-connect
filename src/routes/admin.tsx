@@ -798,7 +798,7 @@ function OrdersList({ filterStatus, title, allowSell }: { filterStatus: OrderSta
     if (!price || price <= 0) return toast.error("Informe um valor válido");
     const { error } = await supabase.from("orders").update({ status: "sold", sold_price: price }).eq("id", sellOrder.id);
     if (error) return toast.error(error.message);
-    await supabase.from("motorcycles").update({ status: "sold" }).eq("id", sellOrder.motorcycle_id);
+    // O estoque é baixado automaticamente; a peça só fica "Vendida" quando zera.
     toast.success("Venda registrada");
     setSellOrder(null); setSoldPrice(""); load();
   }
