@@ -160,8 +160,10 @@ export function StoreMap({ address, lat, lng }: { address?: string | null; lat?:
 }
 
 /** Card de peça de roupa da vitrine pública. */
-export function ProductCard({ item, cover, slug }: { item: any; cover: string; slug?: string }) {
+export function ProductCard({ item, cover, slug, badges }: { item: any; cover: string; slug?: string; badges?: { gift?: string; sold?: string; reserved?: string } }) {
   const details = [item.piece_type, item.size ? `Tam. ${item.size}` : null, item.color].filter(Boolean).join(" · ");
+  const statusStyle = buttonStyleFor(item.status === "sold" ? badges?.sold : badges?.reserved);
+  const giftStyle = buttonStyleFor(badges?.gift);
   return (
     <Link
       to="/produto/$id"
@@ -171,35 +173,35 @@ export function ProductCard({ item, cover, slug }: { item: any; cover: string; s
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {cover ? (
-          <img src={cover} alt={`${item.brand ?? ""} ${item.model}`.trim()} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={cover} alt={`${item.brand ?? ""} ${item.model}`.trim()} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>
         )}
         {item.status !== "available" && (
-          <div className="absolute right-2 top-2 rounded-md bg-secondary/95 px-2 py-1 text-xs font-semibold text-secondary-foreground">
+          <div style={statusStyle} className="absolute right-1.5 top-1.5 rounded-md bg-secondary/95 px-2 py-1 text-[10px] font-semibold text-secondary-foreground sm:text-xs">
             {item.status === "sold" ? "Vendida" : "Reservada"}
           </div>
         )}
         {item.gift && (
-          <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
+          <div style={giftStyle} className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground sm:text-xs">
             <Gift className="size-3" /> Brinde
           </div>
         )}
       </div>
-      <div className="p-4">
-        {item.brand && <div className="text-xs font-semibold uppercase tracking-wider text-primary">{item.brand}</div>}
-        <h3 className="mt-0.5 truncate text-lg font-bold">{item.model}</h3>
-        {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
-        <div className={`mt-1 text-xs font-semibold ${Number(item.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
+      <div className="p-3 sm:p-4">
+        {item.brand && <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-primary sm:text-xs">{item.brand}</div>}
+        <h3 className="mt-0.5 truncate text-sm font-bold sm:text-lg">{item.model}</h3>
+        {details && <div className="mt-1 truncate text-[11px] text-muted-foreground sm:text-xs">{details}</div>}
+        <div className={`mt-1 text-[11px] font-semibold sm:text-xs ${Number(item.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
           {Number(item.stock_quantity) > 0
             ? `${item.stock_quantity} ${Number(item.stock_quantity) === 1 ? "peça disponível" : "peças disponíveis"}`
             : "Esgotado"}
         </div>
-        <div className="mt-3 text-xl font-extrabold text-foreground">
+        <div className="mt-2 text-base font-extrabold text-foreground sm:mt-3 sm:text-xl">
           {Number(item.price_cash).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </div>
         {item.price_installment && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground sm:text-xs">
             ou {item.installment_count || 12}x de{" "}
             {(Number(item.price_installment) / (item.installment_count || 12)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
@@ -208,6 +210,7 @@ export function ProductCard({ item, cover, slug }: { item: any; cover: string; s
     </Link>
   );
 }
+
 
 export async function fetchTenantBySlug(slug: string) {
   const { data: tenant } = await supabase
