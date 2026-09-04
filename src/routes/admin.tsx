@@ -13,11 +13,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
 import {
   LogOut, Plus, Edit2, Trash2, Upload, ImagePlus, X, FileText,
   TrendingUp, Shirt, Users, CheckCircle2, DollarSign, Settings as Cog,
-  Clock, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw, Share2, Copy, Check,
+  Clock, CalendarDays, AlertTriangle, ShieldAlert, ExternalLink, RefreshCw, Share2, Copy, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
