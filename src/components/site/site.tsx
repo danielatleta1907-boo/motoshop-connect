@@ -133,8 +133,18 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-        © {new Date().getFullYear()} {settings.store_name} · Powered by Moda & Estilo
+        <span>© {new Date().getFullYear()} {settings.store_name} · Powered by Moda & Estilo</span>
+        <a
+          href="mailto:danielatleta1907@gmail.com?subject=Preciso%20de%20um%20software&body=Ol%C3%A1%20Daniel%2C%20gostaria%20de%20conversar%20sobre%20o%20desenvolvimento%20de%20um%20software."
+          onClick={(e) => {
+            if (!confirm("Precisa de um software sob medida? Vamos entrar em contato pelo e-mail danielatleta1907@gmail.com?")) e.preventDefault();
+          }}
+          className="ml-2 font-semibold underline hover:opacity-100"
+        >
+          Desenvolvedor
+        </a>
       </div>
+
     </footer>
   );
 }
