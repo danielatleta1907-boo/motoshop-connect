@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { whatsappLink } from "@/lib/format";
+import { whatsappLink, composeAddress } from "@/lib/format";
 import { buttonStyleFor } from "@/lib/store-theme";
 import { LogIn, MapPin, Phone, Gift, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,15 @@ export type StoreSettings = {
   facebook: string | null;
   business_hours: Record<string, string> | null;
   about: string | null;
+  address_street?: string | null;
+  address_number?: string | null;
+  address_district?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  address_cep?: string | null;
+  theme_badge_gift?: string | null;
+  theme_badge_sold?: string | null;
+  theme_badge_reserved?: string | null;
 };
 
 export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { settings: StoreSettings | null; slug?: string; headerStyle?: React.CSSProperties; buttonColor?: string }) {
@@ -115,7 +124,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
           <div className="mb-2 flex items-center gap-2 font-semibold">
             <MapPin className="size-4 text-primary" /> Retirada no local
           </div>
-          <p className="text-sm opacity-80">{settings.address}</p>
+          <p className="text-sm opacity-80">{composeAddress(settings)}</p>
           {settings.whatsapp && <p className="mt-1 text-sm opacity-80">WhatsApp: {settings.whatsapp}</p>}
           {settings.phone && <p className="text-sm opacity-80">Telefone: {settings.phone}</p>}
           {settings.email && <p className="text-sm opacity-80">{settings.email}</p>}
