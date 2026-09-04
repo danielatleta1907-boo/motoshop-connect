@@ -4,7 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
-import { brl } from "@/lib/format";
+import { brl, composeAddress } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,7 +130,7 @@ function AdminPage() {
           <TabsContent value="leads" className="mt-6"><LeadsTab /></TabsContent>
           <TabsContent value="sold" className="mt-6"><SoldTab /></TabsContent>
           <TabsContent value="receipts" className="mt-6"><ReceiptsTab tenantId={tenant.id} /></TabsContent>
-          <TabsContent value="settings" className="mt-6"><SettingsTab tenantId={tenant.id} /></TabsContent>
+          <TabsContent value="settings" className="mt-6"><SettingsTab tenantId={tenant.id} slug={tenant.slug} onSlugSaved={reload} /></TabsContent>
         </Tabs>
       </main>
 
@@ -1102,7 +1102,7 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
 }
 
 /* ============ SETTINGS ============ */
-function SettingsTab({ tenantId }: { tenantId: string }) {
+function SettingsTab({ tenantId, slug, onSlugSaved }: { tenantId: string; slug: string; onSlugSaved: () => void }) {
   const [s, setS] = useState<any>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
@@ -1143,6 +1143,12 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       logo_url,
       motivational_phrase: s.motivational_phrase,
       address: s.address,
+      address_street: s.address_street || null,
+      address_number: s.address_number || null,
+      address_district: s.address_district || null,
+      address_city: s.address_city || null,
+      address_state: s.address_state || null,
+      address_cep: s.address_cep || null,
       latitude: s.latitude ? Number(s.latitude) : null,
       longitude: s.longitude ? Number(s.longitude) : null,
       whatsapp: s.whatsapp, phone: s.phone, email: s.email,
@@ -1156,6 +1162,9 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
       theme_hero: s.theme_hero || null,
       theme_header: s.theme_header || null,
       theme_footer: s.theme_footer || null,
+      theme_badge_gift: s.theme_badge_gift || null,
+      theme_badge_sold: s.theme_badge_sold || null,
+      theme_badge_reserved: s.theme_badge_reserved || null,
     }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -1201,7 +1210,20 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
 
       <div className="space-y-4 rounded-xl border border-border bg-card p-5">
         <h3 className="font-bold">Contato e localização</h3>
-        <Field label="Endereço"><Input value={s.address || ""} onChange={(e) => setS({ ...s, address: e.target.value })} /></Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
+          <Field label="Rua / avenida"><Input value={s.address_street || ""} onChange={(e) => setS({ ...s, address_street: e.target.value })} placeholder="Av. Almirante Barroso" /></Field>
+          <Field label="Número"><Input value={s.address_number || ""} onChange={(e) => setS({ ...s, address_number: e.target.value })} placeholder="1385" /></Field>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Bairro"><Input value={s.address_district || ""} onChange={(e) => setS({ ...s, address_district: e.target.value })} placeholder="Centro" /></Field>
+          <Field label="CEP"><Input value={s.address_cep || ""} onChange={(e) => setS({ ...s, address_cep: e.target.value })} placeholder="58400-000" /></Field>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
+          <Field label="Cidade"><Input value={s.address_city || ""} onChange={(e) => setS({ ...s, address_city: e.target.value })} placeholder="Campina Grande" /></Field>
+          <Field label="Estado (UF)"><Input value={s.address_state || ""} onChange={(e) => setS({ ...s, address_state: e.target.value })} placeholder="PB" maxLength={2} /></Field>
+        </div>
+        <p className="text-xs text-muted-foreground">Endereço no mapa: <span className="font-medium text-foreground">{composeAddress(s) || "—"}</span></p>
+        <Field label="Complemento / referência (opcional)"><Input value={s.address || ""} onChange={(e) => setS({ ...s, address: e.target.value })} placeholder="Ao lado da praça, loja 12" /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Latitude (opcional)"><Input type="number" step="0.0000001" value={s.latitude || ""} onChange={(e) => setS({ ...s, latitude: e.target.value })} /></Field>
           <Field label="Longitude (opcional)"><Input type="number" step="0.0000001" value={s.longitude || ""} onChange={(e) => setS({ ...s, longitude: e.target.value })} /></Field>
@@ -1298,7 +1320,25 @@ function SettingsTab({ tenantId }: { tenantId: string }) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">Deixe em branco para usar as cores derivadas automaticamente da cor principal.</p>
+
+        <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
+          {([
+            { key: "theme_badge_gift", label: "Etiqueta “Brinde”", def: "#16a34a" },
+            { key: "theme_badge_sold", label: "Etiqueta “Vendida”", def: "#64748b" },
+            { key: "theme_badge_reserved", label: "Etiqueta “Reservada”", def: "#f59e0b" },
+          ] as const).map((f) => (
+            <ThemeColorField
+              key={f.key}
+              label={f.label}
+              def={f.def}
+              value={(s as any)[f.key] || ""}
+              onChange={(v) => setS({ ...s, [f.key]: v })}
+            />
+          ))}
+        </div>
       </div>
+
+      <SlugEditor tenantId={tenantId} slug={slug} onSaved={onSlugSaved} />
 
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={save} disabled={saving} className="bg-brand text-primary-foreground hover:opacity-90">{saving ? "Salvando…" : "Salvar tudo"}</Button>

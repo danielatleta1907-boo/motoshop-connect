@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { brl, whatsappLink, composeAddress } from "@/lib/format";
+import { brl, composeAddress } from "@/lib/format";
 import { ArrowLeft, ShoppingBag, CheckCircle2, Shirt, Ruler, Palette, Gift, Users } from "lucide-react";
 import { toast } from "sonner";
 
