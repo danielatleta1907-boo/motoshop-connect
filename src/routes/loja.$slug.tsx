@@ -6,7 +6,8 @@ import { SiteHeader, SiteFooter, ProductCard, StoreMap, FloatingWhatsApp, fetchT
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { storeTheme } from "@/lib/store-theme";
+import { storeTheme, badgeColors } from "@/lib/store-theme";
+import { composeAddress } from "@/lib/format";
 
 export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
@@ -96,6 +97,8 @@ function PublicStore() {
   }
 
   const { themeStyle, heroStyle, headerStyle, footerStyle, buttonColor, cardBgOverride } = storeTheme(settings);
+  const badges = badgeColors(settings);
+  const fullAddress = composeAddress(settings);
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={themeStyle}>
@@ -136,20 +139,20 @@ function PublicStore() {
         {filtered.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-16 text-center text-muted-foreground">Nenhuma peça encontrada.</div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => <ProductCard key={m.id} item={m} cover={covers[m.id] || ""} slug={slug} />)}
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {filtered.map((m) => <ProductCard key={m.id} item={m} cover={covers[m.id] || ""} slug={slug} badges={badges} />)}
           </div>
         )}
       </section>
 
-      {settings?.address && (
+      {fullAddress && (
         <section className="mx-auto max-w-7xl px-4 py-10">
           <h2 className="mb-4 text-2xl font-bold">Onde retirar</h2>
           <div className="grid gap-6 md:grid-cols-2">
-            <StoreMap address={settings.address} lat={settings.latitude} lng={settings.longitude} />
+            <StoreMap address={fullAddress} lat={settings.latitude} lng={settings.longitude} />
             <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
               <div className="text-sm font-semibold uppercase tracking-wider text-primary">Endereço</div>
-              <p className="mt-1 text-lg font-semibold">{settings.address}</p>
+              <p className="mt-1 text-lg font-semibold">{fullAddress}</p>
               {settings.whatsapp && <p className="mt-3 text-sm">WhatsApp: <span className="font-medium">{settings.whatsapp}</span></p>}
               {settings.phone && <p className="text-sm">Telefone: <span className="font-medium">{settings.phone}</span></p>}
               {settings.email && <p className="text-sm">{settings.email}</p>}

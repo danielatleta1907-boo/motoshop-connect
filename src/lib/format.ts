@@ -34,3 +34,17 @@ export const whatsappLink = (phone: string | null | undefined, msg?: string) => 
   if (!n) return "";
   return msg ? `https://wa.me/${n}?text=${encodeURIComponent(msg)}` : `https://wa.me/${n}`;
 };
+
+/** Monta o endereço completo a partir dos campos detalhados (rua, número, bairro, cidade, UF, CEP). */
+export const composeAddress = (s: any): string => {
+  if (!s) return "";
+  const street = [s.address_street, s.address_number].filter(Boolean).join(", ");
+  const parts = [
+    street,
+    s.address_district,
+    [s.address_city, s.address_state].filter(Boolean).join(" - "),
+    s.address_cep ? `CEP ${s.address_cep}` : "",
+  ].filter((p) => p && String(p).trim());
+  const full = parts.join(", ");
+  return full || (s.address || "");
+};

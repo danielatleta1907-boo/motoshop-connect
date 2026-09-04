@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { brl, whatsappLink } from "@/lib/format";
-import { ArrowLeft, MessageCircle, ShoppingBag, CheckCircle2, Shirt, Ruler, Palette, Gift, Users } from "lucide-react";
+import { brl, composeAddress } from "@/lib/format";
+import { ArrowLeft, ShoppingBag, CheckCircle2, Shirt, Ruler, Palette, Gift, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/produto/$id")({
@@ -168,22 +168,17 @@ function ProductDetail() {
 
           {item.description && <div className="mt-5 whitespace-pre-line text-sm text-muted-foreground">{item.description}</div>}
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button size="lg" style={buttonStyle} className="bg-brand text-primary-foreground hover:opacity-90" onClick={() => { setOpen(true); setDone(false); }} disabled={item.status === "sold"}>
+          <div className="mt-6">
+            <Button size="lg" style={buttonStyle} className="w-full bg-brand text-primary-foreground hover:opacity-90 sm:w-auto" onClick={() => { setOpen(true); setDone(false); }} disabled={item.status === "sold"}>
               <ShoppingBag className="mr-2 size-4" /> Encomendar
             </Button>
-            {whatsappLink(settings?.whatsapp, wppMsg) && (
-              <a href={whatsappLink(settings?.whatsapp, wppMsg)} target="_blank" rel="noreferrer">
-                <Button size="lg" variant="outline" style={buttonStyle} className="w-full"><MessageCircle className="mr-2 size-4" /> WhatsApp</Button>
-              </a>
-            )}
           </div>
 
-          {settings?.address && (
+          {composeAddress(settings) && (
             <div className="mt-8">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Retire na loja</h2>
-              <StoreMap address={settings.address} lat={settings.latitude} lng={settings.longitude} />
-              <p className="mt-2 text-sm text-muted-foreground">{settings.address}</p>
+              <StoreMap address={composeAddress(settings)} lat={settings.latitude} lng={settings.longitude} />
+              <p className="mt-2 text-sm text-muted-foreground">{composeAddress(settings)}</p>
             </div>
           )}
         </div>

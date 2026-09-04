@@ -61,3 +61,13 @@ export function buttonStyleFor(color?: string | null): React.CSSProperties | und
     ? { background: color, color: fg, borderColor: "transparent" }
     : { backgroundColor: color, color: fg, borderColor: color };
 }
+
+/** Cores das etiquetas (brinde, vendida, reservada) escolhidas pelo lojista. */
+export function badgeColors(settings: any | null) {
+  const s: any = settings || {};
+  return {
+    gift: s.theme_badge_gift || undefined,
+    sold: s.theme_badge_sold || undefined,
+    reserved: s.theme_badge_reserved || undefined,
+  };
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/storage";
-import { whatsappLink } from "@/lib/format";
+import { whatsappLink, composeAddress } from "@/lib/format";
 import { buttonStyleFor } from "@/lib/store-theme";
 import { LogIn, MapPin, Phone, Gift, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,15 @@ export type StoreSettings = {
   facebook: string | null;
   business_hours: Record<string, string> | null;
   about: string | null;
+  address_street?: string | null;
+  address_number?: string | null;
+  address_district?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  address_cep?: string | null;
+  theme_badge_gift?: string | null;
+  theme_badge_sold?: string | null;
+  theme_badge_reserved?: string | null;
 };
 
 export function SiteHeader({ settings, slug, headerStyle, buttonColor }: { settings: StoreSettings | null; slug?: string; headerStyle?: React.CSSProperties; buttonColor?: string }) {
@@ -115,7 +124,7 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
           <div className="mb-2 flex items-center gap-2 font-semibold">
             <MapPin className="size-4 text-primary" /> Retirada no local
           </div>
-          <p className="text-sm opacity-80">{settings.address}</p>
+          <p className="text-sm opacity-80">{composeAddress(settings)}</p>
           {settings.whatsapp && <p className="mt-1 text-sm opacity-80">WhatsApp: {settings.whatsapp}</p>}
           {settings.phone && <p className="text-sm opacity-80">Telefone: {settings.phone}</p>}
           {settings.email && <p className="text-sm opacity-80">{settings.email}</p>}
@@ -133,8 +142,18 @@ export function SiteFooter({ settings, footerStyle }: { settings: StoreSettings 
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-        © {new Date().getFullYear()} {settings.store_name} · Powered by Moda & Estilo
+        <span>© {new Date().getFullYear()} {settings.store_name} · Powered by Moda & Estilo</span>
+        <a
+          href="mailto:danielatleta1907@gmail.com?subject=Preciso%20de%20um%20software&body=Ol%C3%A1%20Daniel%2C%20gostaria%20de%20conversar%20sobre%20o%20desenvolvimento%20de%20um%20software."
+          onClick={(e) => {
+            if (!confirm("Precisa de um software sob medida? Vamos entrar em contato pelo e-mail danielatleta1907@gmail.com?")) e.preventDefault();
+          }}
+          className="ml-2 font-semibold underline hover:opacity-100"
+        >
+          Desenvolvedor
+        </a>
       </div>
+
     </footer>
   );
 }
@@ -160,8 +179,10 @@ export function StoreMap({ address, lat, lng }: { address?: string | null; lat?:
 }
 
 /** Card de peça de roupa da vitrine pública. */
-export function ProductCard({ item, cover, slug }: { item: any; cover: string; slug?: string }) {
+export function ProductCard({ item, cover, slug, badges }: { item: any; cover: string; slug?: string; badges?: { gift?: string; sold?: string; reserved?: string } }) {
   const details = [item.piece_type, item.size ? `Tam. ${item.size}` : null, item.color].filter(Boolean).join(" · ");
+  const statusStyle = buttonStyleFor(item.status === "sold" ? badges?.sold : badges?.reserved);
+  const giftStyle = buttonStyleFor(badges?.gift);
   return (
     <Link
       to="/produto/$id"
@@ -171,35 +192,35 @@ export function ProductCard({ item, cover, slug }: { item: any; cover: string; s
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {cover ? (
-          <img src={cover} alt={`${item.brand ?? ""} ${item.model}`.trim()} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={cover} alt={`${item.brand ?? ""} ${item.model}`.trim()} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="grid h-full place-items-center text-muted-foreground">Sem foto</div>
         )}
         {item.status !== "available" && (
-          <div className="absolute right-2 top-2 rounded-md bg-secondary/95 px-2 py-1 text-xs font-semibold text-secondary-foreground">
+          <div style={statusStyle} className="absolute right-1.5 top-1.5 rounded-md bg-secondary/95 px-2 py-1 text-[10px] font-semibold text-secondary-foreground sm:text-xs">
             {item.status === "sold" ? "Vendida" : "Reservada"}
           </div>
         )}
         {item.gift && (
-          <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
+          <div style={giftStyle} className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground sm:text-xs">
             <Gift className="size-3" /> Brinde
           </div>
         )}
       </div>
-      <div className="p-4">
-        {item.brand && <div className="text-xs font-semibold uppercase tracking-wider text-primary">{item.brand}</div>}
-        <h3 className="mt-0.5 truncate text-lg font-bold">{item.model}</h3>
-        {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
-        <div className={`mt-1 text-xs font-semibold ${Number(item.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
+      <div className="p-3 sm:p-4">
+        {item.brand && <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-primary sm:text-xs">{item.brand}</div>}
+        <h3 className="mt-0.5 truncate text-sm font-bold sm:text-lg">{item.model}</h3>
+        {details && <div className="mt-1 truncate text-[11px] text-muted-foreground sm:text-xs">{details}</div>}
+        <div className={`mt-1 text-[11px] font-semibold sm:text-xs ${Number(item.stock_quantity) > 0 ? "text-primary" : "text-muted-foreground"}`}>
           {Number(item.stock_quantity) > 0
             ? `${item.stock_quantity} ${Number(item.stock_quantity) === 1 ? "peça disponível" : "peças disponíveis"}`
             : "Esgotado"}
         </div>
-        <div className="mt-3 text-xl font-extrabold text-foreground">
+        <div className="mt-2 text-base font-extrabold text-foreground sm:mt-3 sm:text-xl">
           {Number(item.price_cash).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </div>
         {item.price_installment && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground sm:text-xs">
             ou {item.installment_count || 12}x de{" "}
             {(Number(item.price_installment) / (item.installment_count || 12)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
@@ -208,6 +229,7 @@ export function ProductCard({ item, cover, slug }: { item: any; cover: string; s
     </Link>
   );
 }
+
 
 export async function fetchTenantBySlug(slug: string) {
   const { data: tenant } = await supabase

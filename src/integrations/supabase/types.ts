@@ -430,6 +430,12 @@ export type Database = {
         Row: {
           about: string | null
           address: string | null
+          address_cep: string | null
+          address_city: string | null
+          address_district: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
           business_hours: Json | null
           email: string | null
           facebook: string | null
@@ -441,6 +447,9 @@ export type Database = {
           phone: string | null
           store_name: string
           tenant_id: string
+          theme_badge_gift: string | null
+          theme_badge_reserved: string | null
+          theme_badge_sold: string | null
           theme_bg: string | null
           theme_button: string | null
           theme_card: string | null
@@ -455,6 +464,12 @@ export type Database = {
         Insert: {
           about?: string | null
           address?: string | null
+          address_cep?: string | null
+          address_city?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           business_hours?: Json | null
           email?: string | null
           facebook?: string | null
@@ -466,6 +481,9 @@ export type Database = {
           phone?: string | null
           store_name?: string
           tenant_id: string
+          theme_badge_gift?: string | null
+          theme_badge_reserved?: string | null
+          theme_badge_sold?: string | null
           theme_bg?: string | null
           theme_button?: string | null
           theme_card?: string | null
@@ -480,6 +498,12 @@ export type Database = {
         Update: {
           about?: string | null
           address?: string | null
+          address_cep?: string | null
+          address_city?: string | null
+          address_district?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           business_hours?: Json | null
           email?: string | null
           facebook?: string | null
@@ -491,6 +515,9 @@ export type Database = {
           phone?: string | null
           store_name?: string
           tenant_id?: string
+          theme_badge_gift?: string | null
+          theme_badge_reserved?: string | null
+          theme_badge_sold?: string | null
           theme_bg?: string | null
           theme_button?: string | null
           theme_card?: string | null
