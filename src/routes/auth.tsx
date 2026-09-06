@@ -158,7 +158,7 @@ function AuthPage() {
                 <Button onClick={signUp} disabled={loading || !email || !password || !name} className="w-full bg-brand text-primary-foreground hover:opacity-90">
                   <Sparkles className="mr-2 size-4" /> {loading ? "Criando…" : "Criar conta e minha loja"}
                 </Button>
-                <p className="text-xs text-muted-foreground">A 1ª conta criada vira <strong>administrador</strong> da plataforma.</p>
+                
               </TabsContent>
 
               <TabsContent value="login" className="mt-5">
