@@ -1473,3 +1473,40 @@ function NewLeadsBadge({ tenantId }: { tenantId: string }) {
     </span>
   );
 }
+
+/* ============ URL DA LOJA ============ */
+function SlugEditor({ tenantId, slug, onSaved }: { tenantId: string; slug: string; onSaved: () => void }) {
+  const [value, setValue] = useState(slug);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setValue(slug); }, [slug]);
+
+  const clean = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const url = typeof window !== "undefined" ? `${window.location.origin}/loja/${clean || slug}` : `/loja/${clean || slug}`;
+
+  async function save() {
+    if (!clean) return toast.error("Informe um endereço válido");
+    if (clean === slug) return toast.info("O endereço já é esse");
+    setBusy(true);
+    const { error } = await supabase.from("tenants").update({ slug: clean }).eq("id", tenantId);
+    setBusy(false);
+    if (error) {
+      return toast.error(error.message.includes("duplicate") ? "Esse endereço já está sendo usado por outra loja" : error.message);
+    }
+    toast.success("Link da loja atualizado!");
+    onSaved();
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-card p-5 lg:col-span-2">
+      <h3 className="font-bold">Link da sua loja</h3>
+      <p className="text-sm text-muted-foreground">Personalize o endereço que você compartilha com as clientes. Use apenas letras, números e hífens.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="text-sm text-muted-foreground">/loja/</span>
+        <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="minha-loja" className="sm:max-w-xs" />
+        <Button onClick={save} disabled={busy} variant="outline">{busy ? "Salvando…" : "Salvar link"}</Button>
+      </div>
+      <p className="break-all text-xs text-muted-foreground">Ficará assim: <span className="font-medium text-foreground">{url}</span></p>
+      <p className="text-xs text-muted-foreground">Atenção: ao mudar o endereço, o link antigo deixa de funcionar.</p>
+    </div>
+  );
+}
