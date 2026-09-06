@@ -34,7 +34,7 @@ function Landing() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <div className="grid size-10 place-items-center rounded-lg bg-brand text-primary-foreground font-black text-sm">ME</div>
+            <img src="/favicon.png" alt="Moda & Estilo" className="size-10 rounded-lg object-cover ring-1 ring-white/30" />
             <div className="leading-tight">
               <div className="text-base font-bold">Moda & Estilo</div>
               <div className="text-[10px] uppercase tracking-widest text-primary">Vitrine de moda</div>
@@ -176,7 +176,7 @@ function Landing() {
       <footer className="border-t border-border bg-secondary text-secondary-foreground">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-md bg-brand text-primary-foreground font-black text-xs">ME</div>
+            <img src="/favicon.png" alt="Moda & Estilo" className="size-9 rounded-md object-cover ring-1 ring-white/20" />
             <span className="font-bold">Moda & Estilo</span>
           </div>
           <div className="flex flex-col items-center gap-1 md:flex-row md:gap-4">
