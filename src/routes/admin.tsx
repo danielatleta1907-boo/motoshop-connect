@@ -1029,38 +1029,81 @@ function ReceiptsTab({ tenantId }: { tenantId: string }) {
     load();
   }
 
+  const months = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; items: any[]; total: number }>();
+    for (const r of list) {
+      const d = new Date(r.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      if (!map.has(key)) map.set(key, { key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [], total: 0 });
+      const g = map.get(key)!;
+      g.items.push(r);
+      g.total += Number(r.amount) || 0;
+    }
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [list]);
+
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold">Comprovantes e notas fiscais</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-bold">Comprovantes e notas fiscais</h2>
+          <p className="text-xs text-muted-foreground">Uma pasta para cada mês. Nada é apagado automaticamente.</p>
+        </div>
         <Button onClick={() => setOpen(true)} className="bg-brand text-primary-foreground hover:opacity-90"><Plus className="mr-2 size-4" />Novo</Button>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Peça</TableHead>
-              <TableHead>Valor</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Nenhum documento</TableCell></TableRow>}
-            {list.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-medium">{r.title}</TableCell>
-                <TableCell>{r.doc_type === "invoice" ? "Nota fiscal" : "Comprovante"}</TableCell>
-                <TableCell className="text-sm">{r.motorcycles ? r.motorcycles.model : "—"}</TableCell>
-                <TableCell>{r.amount ? brl(Number(r.amount)) : "—"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => open_(r.id)}>Abrir</Button>
-                  <Button size="sm" variant="ghost" onClick={() => del(r)} className="ml-1"><Trash2 className="size-4" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+
+      {months.length === 0 && (
+        <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">Nenhum documento</div>
+      )}
+
+      <Accordion type="multiple" defaultValue={months.slice(0, 1).map((m) => m.key)} className="space-y-3">
+        {months.map((m) => (
+          <AccordionItem key={m.key} value={m.key} className="overflow-hidden rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex w-full flex-wrap items-center justify-between gap-2 pr-2 text-left">
+                <span className="flex items-center gap-2 font-semibold">
+                  <CalendarDays className="size-4 text-primary" />
+                  {m.label}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{m.items.length} documento{m.items.length > 1 ? "s" : ""}</span>
+                </span>
+                <span className="text-sm font-bold text-primary">{brl(m.total)}</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="overflow-x-auto pb-3">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Peça</TableHead>
+                      <TableHead>Valor</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {m.items.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.title}</TableCell>
+                        <TableCell>{r.doc_type === "invoice" ? "Nota fiscal" : "Comprovante"}</TableCell>
+                        <TableCell className="text-sm">{r.motorcycles ? r.motorcycles.model : "—"}</TableCell>
+                        <TableCell>{r.amount ? brl(Number(r.amount)) : "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          <div>{new Date(r.created_at).toLocaleDateString("pt-BR")}</div>
+                          <div>{new Date(r.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => open_(r.id)}>Abrir</Button>
+                          <Button size="sm" variant="ghost" onClick={() => del(r)} className="ml-1"><Trash2 className="size-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -1471,5 +1514,42 @@ function NewLeadsBadge({ tenantId }: { tenantId: string }) {
     <span className="ml-2 grid min-w-[22px] place-items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-md animate-pulse">
       {count > 99 ? "99+" : count}
     </span>
+  );
+}
+
+/* ============ URL DA LOJA ============ */
+function SlugEditor({ tenantId, slug, onSaved }: { tenantId: string; slug: string; onSaved: () => void }) {
+  const [value, setValue] = useState(slug);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setValue(slug); }, [slug]);
+
+  const clean = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const url = typeof window !== "undefined" ? `${window.location.origin}/loja/${clean || slug}` : `/loja/${clean || slug}`;
+
+  async function save() {
+    if (!clean) return toast.error("Informe um endereço válido");
+    if (clean === slug) return toast.info("O endereço já é esse");
+    setBusy(true);
+    const { error } = await supabase.from("tenants").update({ slug: clean }).eq("id", tenantId);
+    setBusy(false);
+    if (error) {
+      return toast.error(error.message.includes("duplicate") ? "Esse endereço já está sendo usado por outra loja" : error.message);
+    }
+    toast.success("Link da loja atualizado!");
+    onSaved();
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-card p-5 lg:col-span-2">
+      <h3 className="font-bold">Link da sua loja</h3>
+      <p className="text-sm text-muted-foreground">Personalize o endereço que você compartilha com as clientes. Use apenas letras, números e hífens.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="text-sm text-muted-foreground">/loja/</span>
+        <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="minha-loja" className="sm:max-w-xs" />
+        <Button onClick={save} disabled={busy} variant="outline">{busy ? "Salvando…" : "Salvar link"}</Button>
+      </div>
+      <p className="break-all text-xs text-muted-foreground">Ficará assim: <span className="font-medium text-foreground">{url}</span></p>
+      <p className="text-xs text-muted-foreground">Atenção: ao mudar o endereço, o link antigo deixa de funcionar.</p>
+    </div>
   );
 }

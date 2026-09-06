@@ -149,13 +149,13 @@ function PublicStore() {
         <section className="mx-auto max-w-7xl px-4 py-10">
           <h2 className="mb-4 text-2xl font-bold">Onde retirar</h2>
           <div className="grid gap-6 md:grid-cols-2">
-            <StoreMap address={fullAddress} lat={settings.latitude} lng={settings.longitude} />
+            <StoreMap address={fullAddress} lat={settings?.latitude ?? null} lng={settings?.longitude ?? null} />
             <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
               <div className="text-sm font-semibold uppercase tracking-wider text-primary">Endereço</div>
               <p className="mt-1 text-lg font-semibold">{fullAddress}</p>
-              {settings.whatsapp && <p className="mt-3 text-sm">WhatsApp: <span className="font-medium">{settings.whatsapp}</span></p>}
-              {settings.phone && <p className="text-sm">Telefone: <span className="font-medium">{settings.phone}</span></p>}
-              {settings.email && <p className="text-sm">{settings.email}</p>}
+              {settings?.whatsapp && <p className="mt-3 text-sm">WhatsApp: <span className="font-medium">{settings?.whatsapp}</span></p>}
+              {settings?.phone && <p className="text-sm">Telefone: <span className="font-medium">{settings?.phone}</span></p>}
+              {settings?.email && <p className="text-sm">{settings?.email}</p>}
             </div>
           </div>
         </section>

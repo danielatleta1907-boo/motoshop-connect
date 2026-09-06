@@ -177,7 +177,7 @@ function ProductDetail() {
           {composeAddress(settings) && (
             <div className="mt-8">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Retire na loja</h2>
-              <StoreMap address={composeAddress(settings)} lat={settings.latitude} lng={settings.longitude} />
+              <StoreMap address={composeAddress(settings)} lat={settings?.latitude ?? null} lng={settings?.longitude ?? null} />
               <p className="mt-2 text-sm text-muted-foreground">{composeAddress(settings)}</p>
             </div>
           )}
