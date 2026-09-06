@@ -2,20 +2,12 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { signedUrl } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { sendPasswordReset } from "@/lib/admin-users.functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import {
-  ShieldCheck, LogOut, FileText, Store,
-  AlertCircle, ExternalLink, Pause, Play, Trash2, Receipt, KeyRound, Mail,
-} from "lucide-react";
+import { ShieldCheck, LogOut, Store, AlertCircle, Pause, Play, Mail, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/super-admin")({
   ssr: false,
@@ -67,37 +59,15 @@ function SuperAdminPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <Tabs defaultValue="tenants">
-          <TabsList>
-            <TabsTrigger value="tenants"><Store className="mr-2 size-4" />Lojas</TabsTrigger>
-            <TabsTrigger value="proofs"><FileText className="mr-2 size-4" />Histórico de comprovantes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tenants" className="mt-6"><TenantsTab /></TabsContent>
-          <TabsContent value="proofs" className="mt-6"><AllProofsTab /></TabsContent>
-        </Tabs>
+        <TenantsOverview />
       </main>
     </div>
   );
 }
 
-function Info({ label, v }: { label: string; v: any }) {
-  return (
-    <div className="rounded-md border border-border bg-card p-2">
-      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
-      <div className="font-medium">{v ?? "—"}</div>
-    </div>
-  );
-}
-
-/* ============ LOJAS ============ */
-function TenantsTab() {
+function TenantsOverview() {
   const [list, setList] = useState<any[]>([]);
-  const [proofView, setProofView] = useState<any | null>(null);
-  const [proofFileUrl, setProofFileUrl] = useState<string>("");
-  const [pwTarget, setPwTarget] = useState<any | null>(null);
-  const [newPw, setNewPw] = useState("");
-  const [pwBusy, setPwBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const sendReset = useServerFn(sendPasswordReset);
 
   async function load() {
@@ -106,45 +76,22 @@ function TenantsTab() {
       .select("*, profiles!tenants_owner_profile_fkey(full_name, email)")
       .order("created_at", { ascending: false });
     setList(data ?? []);
+    setLoading(false);
   }
   useEffect(() => { load(); }, []);
 
-  async function openTenantProof(t: any) {
-    const { data, error } = await supabase
-      .from("payment_proofs")
-      .select("*")
-      .or(`tenant_id.eq.${t.id},user_id.eq.${t.owner_id}`)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-    if (error || !data) {
-      setProofView({ none: true, store_name: t.store_name });
-      setProofFileUrl("");
-      return;
-    }
-    setProofView(data);
-    if (data.file_url) setProofFileUrl(await signedUrl("payment-proofs", data.file_url, 60 * 60));
-    else setProofFileUrl("");
-  }
+  const active = list.filter((t) => t.status === "active").length;
 
   async function toggle(t: any, status: string) {
-    if (!confirm(`Mudar status para ${status}?`)) return;
+    if (!confirm(status === "active" ? `Reativar a loja ${t.store_name}?` : `Suspender a loja ${t.store_name}?`)) return;
     const { error } = await supabase.from("tenants").update({ status: status as any }).eq("id", t.id);
     if (error) return toast.error(error.message);
     toast.success("Atualizado"); load();
   }
-  async function del(t: any) {
-    if (!confirm(`EXCLUIR permanentemente a loja ${t.store_name} e seu usuário? Esta ação não pode ser desfeita.`)) return;
-    const { error } = await supabase.rpc("reject_subscriber", { p_user_id: t.owner_id, p_proof_id: "00000000-0000-0000-0000-000000000000", p_reason: "deleted by super admin" });
-    if (error) {
-      await supabase.from("tenants").update({ status: "cancelled" }).eq("id", t.id);
-    }
-    toast.success("Loja removida"); load();
-  }
 
   async function resetPw(t: any) {
     const email = t.profiles?.email;
-    if (!email) return toast.error("Este dono não tem e-mail cadastrado");
+    if (!email) return toast.error("Esta dona não tem e-mail cadastrado");
     if (!confirm(`Enviar e-mail de redefinição de senha para ${email}?`)) return;
     try {
       await sendReset({ data: { email, redirectPath: "/reset-password" } });
@@ -154,39 +101,43 @@ function TenantsTab() {
     }
   }
 
-  async function submitPwByEmail() {
-    if (!pwTarget) return;
-    const email = pwTarget.profiles?.email;
-    if (!email) return toast.error("Este dono não tem e-mail cadastrado");
-    setPwBusy(true);
-    try {
-      await sendReset({ data: { email, redirectPath: "/reset-password" } });
-      toast.success(`Link de troca de senha enviado para ${email}. Só o titular da conta consegue concluir.`);
-      setPwTarget(null);
-    } catch (e: any) {
-      toast.error(e?.message || "Falha ao enviar");
-    } finally {
-      setPwBusy(false);
-    }
-  }
-
   return (
-    <div>
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Lojas ({list.length})</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">Controle de lojas</h2>
         <p className="text-sm text-muted-foreground">
-          Cadastro é automático — nenhuma aprovação é necessária. Use esta área apenas para reenviar link de
-          recuperação de senha (quando a lojista não conseguir pelo e-mail dela) e para suspender ou reativar lojas.
+          Aqui você acompanha quantas lojas existem na plataforma e quais são. O cadastro é automático e gratuito —
+          use esta tela apenas para controle, para reenviar o link de senha quando a lojista não conseguir pelo e-mail dela,
+          e para suspender ou reativar uma loja.
         </p>
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Lojas cadastradas</span>
+            <Store className="size-5 text-primary" />
+          </div>
+          <div className="mt-2 text-3xl font-extrabold">{list.length}</div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Lojas ativas</span>
+            <CheckCircle2 className="size-5 text-primary" />
+          </div>
+          <div className="mt-2 text-3xl font-extrabold">{active}</div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Loja</TableHead><TableHead>Dono</TableHead><TableHead>Status</TableHead>
-            <TableHead>Acesso</TableHead><TableHead>Slug</TableHead><TableHead className="text-right">Ações</TableHead>
+            <TableHead>Loja</TableHead><TableHead>Dona</TableHead><TableHead>Status</TableHead>
+            <TableHead>Cadastro</TableHead><TableHead>Link</TableHead><TableHead className="text-right">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {list.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Nenhuma loja ainda</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Carregando…</TableCell></TableRow>}
+            {!loading && list.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Nenhuma loja ainda</TableCell></TableRow>}
             {list.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-semibold">{t.store_name}</TableCell>
@@ -198,127 +149,19 @@ function TenantsTab() {
                     t.status === "pending" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
                   }`}>{t.status}</span>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">Vitalício</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell><Link to="/loja/$slug" params={{ slug: t.slug }} className="text-xs text-primary hover:underline">/loja/{t.slug}</Link></TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => openTenantProof(t)}><Receipt className="mr-1 size-3.5" />Comprovante</Button>
-                  <Button size="sm" variant="outline" className="ml-1" onClick={() => resetPw(t)}><Mail className="mr-1 size-3.5" />Redefinir senha</Button>
-                  <Button size="sm" variant="outline" className="ml-1" onClick={() => { setPwTarget(t); setNewPw(""); }}><KeyRound className="mr-1 size-3.5" />Trocar senha</Button>
+                  <Button size="sm" variant="outline" onClick={() => resetPw(t)}><Mail className="mr-1 size-3.5" />Redefinir senha</Button>
                   {t.status === "active"
                     ? <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "suspended")}><Pause className="mr-1 size-3.5" />Suspender</Button>
                     : <Button size="sm" variant="outline" className="ml-1" onClick={() => toggle(t, "active")}><Play className="mr-1 size-3.5" />Reativar</Button>}
-                  <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => del(t)}><Trash2 className="size-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-
-      <Dialog open={!!proofView} onOpenChange={(o) => { if (!o) { setProofView(null); setProofFileUrl(""); } }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-          {proofView && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Comprovante — {proofView.none ? proofView.store_name : (proofView.tenants?.store_name || "Loja")}</DialogTitle>
-              </DialogHeader>
-              {proofView.none ? (
-                <div className="grid h-48 place-items-center rounded-md border border-dashed border-border text-muted-foreground">
-                  <div className="text-center">
-                    <Receipt className="mx-auto mb-2 size-10 text-muted-foreground/60" />
-                    <p className="font-medium">Nenhum comprovante enviado por esta loja</p>
-                    <p className="text-sm text-muted-foreground">O lojista ainda não enviou nenhum comprovante de pagamento.</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-[1fr_1fr]">
-                  <div className="space-y-2 text-sm">
-                    <Info label="Status do comprovante" v={proofView.status} />
-                    <Info label="Acesso" v="Vitalício — sem mensalidade" />
-                    <Info label="Data de envio" v={new Date(proofView.created_at).toLocaleString("pt-BR")} />
-                    {proofView.notes && <Info label="Observação" v={proofView.notes} />}
-                  </div>
-                  <div className="space-y-2">
-                    {proofFileUrl ? (
-                      <>
-                        {proofView.file_type === "image" ? (
-                          <a href={proofFileUrl} target="_blank" rel="noreferrer">
-                            <img src={proofFileUrl} alt="comprovante" className="w-full rounded-md border border-border" />
-                          </a>
-                        ) : proofView.file_type === "pdf" ? (
-                          <iframe src={proofFileUrl} className="h-72 w-full rounded-md border border-border" title="comprovante" />
-                        ) : (
-                          <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Pré-visualização indisponível — use os botões abaixo</div>
-                        )}
-                        <div className="flex gap-2">
-                          <a href={proofFileUrl} target="_blank" rel="noreferrer" className="flex-1">
-                            <Button variant="outline" className="w-full"><ExternalLink className="mr-2 size-4" />Abrir em nova aba</Button>
-                          </a>
-                          <a href={proofFileUrl} download className="flex-1">
-                            <Button variant="outline" className="w-full">Baixar</Button>
-                          </a>
-                        </div>
-                      </>
-                    ) : <div className="grid h-40 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Sem arquivo</div>}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setNewPw(""); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Trocar senha — {pwTarget?.store_name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-              <strong className="text-foreground">Como funciona:</strong> por segurança, ninguém — nem o super admin — pode
-              definir a senha de outra conta. Enviamos um link de troca para o e-mail do próprio lojista, e só ele consegue
-              concluir a alteração.
-            </div>
-            <div>
-              <Label>Dono</Label>
-              <div className="text-sm">{pwTarget?.profiles?.full_name} <span className="text-muted-foreground">({pwTarget?.profiles?.email})</span></div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPwTarget(null)}>Cancelar</Button>
-            <Button onClick={submitPwByEmail} disabled={pwBusy}>{pwBusy ? "Enviando…" : "Enviar link de troca"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-/* ============ HISTÓRICO ============ */
-function AllProofsTab() {
-  const [list, setList] = useState<any[]>([]);
-  useEffect(() => {
-    supabase.from("payment_proofs").select("*, profiles!payment_proofs_user_profile_fkey(email)").order("created_at", { ascending: false })
-      .then(({ data }) => setList(data ?? []));
-  }, []);
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <Table>
-        <TableHeader><TableRow>
-          <TableHead>Usuário</TableHead><TableHead>Tipo</TableHead>
-          <TableHead>Status</TableHead><TableHead>Data</TableHead>
-        </TableRow></TableHeader>
-        <TableBody>
-          {list.map((p) => (
-            <TableRow key={p.id}>
-              <TableCell>{p.profiles?.email}</TableCell>
-              <TableCell>{p.desired_slug ? "Novo" : "Reativação"}</TableCell>
-              <TableCell><span className="rounded-md bg-muted px-2 py-1 text-xs font-bold uppercase">{p.status}</span></TableCell>
-              <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 }
