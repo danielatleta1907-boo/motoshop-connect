@@ -25,9 +25,8 @@ async function assertSuperAdmin(context: { supabase: any; userId: string }) {
 }
 
 /**
- * Envia e-mail de redefinição de senha para o dono da loja.
- * A troca de senha só acontece pelo próprio e-mail do usuário (confirmação fora da banda),
- * nunca por definição direta feita por outra pessoa.
+ * Envia e-mail de redefinição de senha para o dono da loja e devolve também o link
+ * de recuperação, para o super admin poder repassar manualmente caso o e-mail não chegue.
  */
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -40,12 +39,27 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
 
     const redirectTo = await resolveRedirectTo(data.redirectPath);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.generateLink({
+
+    // 1) Tenta disparar o e-mail padrão de recuperação.
+    let emailSent = true;
+    let emailError: string | null = null;
+    const { error: mailErr } = await supabaseAdmin.auth.resetPasswordForEmail(data.email,
+      redirectTo ? { redirectTo } : undefined);
+    if (mailErr) {
+      emailSent = false;
+      emailError = mailErr.message;
+    }
+
+    // 2) Gera o link para o super admin poder repassar manualmente.
+    let link: string | null = null;
+    const { data: gen, error: genErr } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: data.email,
       options: redirectTo ? { redirectTo } : undefined,
     });
-    if (error) throw new Error(error.message);
-    // O link nunca volta para o navegador: chega apenas no e-mail do titular da conta.
-    return { ok: true, email: data.email };
+    if (genErr && !emailSent) throw new Error(genErr.message);
+    link = gen?.properties?.action_link ?? null;
+
+    return { ok: true, email: data.email, emailSent, emailError, link };
   });
+
