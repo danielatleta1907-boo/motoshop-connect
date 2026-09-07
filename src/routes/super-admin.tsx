@@ -68,6 +68,7 @@ function SuperAdminPage() {
 function TenantsOverview() {
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetInfo, setResetInfo] = useState<{ email: string; link: string | null; emailSent: boolean; emailError: string | null } | null>(null);
   const sendReset = useServerFn(sendPasswordReset);
 
   async function load() {
@@ -92,14 +93,17 @@ function TenantsOverview() {
   async function resetPw(t: any) {
     const email = t.profiles?.email;
     if (!email) return toast.error("Esta dona não tem e-mail cadastrado");
-    if (!confirm(`Enviar e-mail de redefinição de senha para ${email}?`)) return;
+    if (!confirm(`Gerar link de redefinição de senha para ${email}?`)) return;
     try {
-      await sendReset({ data: { email, redirectPath: "/reset-password" } });
-      toast.success(`E-mail enviado para ${email}`);
+      const r: any = await sendReset({ data: { email, redirectPath: "/reset-password" } });
+      setResetInfo({ email, link: r?.link ?? null, emailSent: !!r?.emailSent, emailError: r?.emailError ?? null });
+      if (r?.emailSent) toast.success(`E-mail enviado para ${email}`);
+      else toast.warning("O e-mail não saiu — use o link abaixo para enviar manualmente.");
     } catch (e: any) {
       toast.error(e?.message || "Falha ao enviar");
     }
   }
+
 
   return (
     <div className="space-y-6">
