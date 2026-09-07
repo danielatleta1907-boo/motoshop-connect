@@ -116,6 +116,44 @@ function TenantsOverview() {
         </p>
       </div>
 
+      {resetInfo && (
+        <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-bold">Link de recuperação · {resetInfo.email}</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {resetInfo.emailSent
+                  ? "O e-mail foi disparado. Se não chegar (verifique o spam), envie o link abaixo manualmente."
+                  : `O e-mail não pôde ser enviado${resetInfo.emailError ? ` (${resetInfo.emailError})` : ""}. Envie o link abaixo manualmente.`}
+              </p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setResetInfo(null)}>Fechar</Button>
+          </div>
+
+          {resetInfo.link ? (
+            <div className="mt-3 space-y-2">
+              <textarea readOnly value={resetInfo.link} className="h-20 w-full rounded-md border border-border bg-background p-2 text-xs" />
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => { navigator.clipboard.writeText(resetInfo.link!); toast.success("Link copiado"); }}>
+                  Copiar link
+                </Button>
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Link para criar uma nova senha na sua loja: ${resetInfo.link}`)}`} target="_blank" rel="noreferrer">
+                  <Button size="sm" variant="outline">Enviar por WhatsApp</Button>
+                </a>
+                <a href={`mailto:${resetInfo.email}?subject=${encodeURIComponent("Recuperação de senha — Moda & Estilo")}&body=${encodeURIComponent(`Use este link para criar uma nova senha: ${resetInfo.link}`)}`}>
+                  <Button size="sm" variant="outline"><Mail className="mr-1 size-3.5" />Enviar por e-mail</Button>
+                </a>
+              </div>
+              <p className="text-xs text-muted-foreground">O link é de uso único e expira. Compartilhe só com a dona da loja.</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-destructive">Não foi possível gerar o link. Tente novamente.</p>
+          )}
+        </div>
+      )}
+
+
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
           <div className="flex items-center justify-between">
