@@ -70,6 +70,7 @@ function TenantsOverview() {
   const [loading, setLoading] = useState(true);
   const [resetInfo, setResetInfo] = useState<{ email: string; link: string | null; emailSent: boolean; emailError: string | null } | null>(null);
   const sendReset = useServerFn(sendPasswordReset);
+  const resetCardRef = useRef<HTMLDivElement | null>(null);
 
   async function load() {
     const { data } = await supabase
