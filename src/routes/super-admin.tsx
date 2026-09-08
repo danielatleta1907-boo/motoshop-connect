@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,6 +70,7 @@ function TenantsOverview() {
   const [loading, setLoading] = useState(true);
   const [resetInfo, setResetInfo] = useState<{ email: string; link: string | null; emailSent: boolean; emailError: string | null } | null>(null);
   const sendReset = useServerFn(sendPasswordReset);
+  const resetCardRef = useRef<HTMLDivElement | null>(null);
 
   async function load() {
     const { data } = await supabase
@@ -93,15 +94,18 @@ function TenantsOverview() {
   async function resetPw(t: any) {
     const email = t.profiles?.email;
     if (!email) return toast.error("Esta dona não tem e-mail cadastrado");
-    if (!confirm(`Gerar link de redefinição de senha para ${email}?`)) return;
+    setResetInfo({ email, link: null, emailSent: false, emailError: "Gerando link..." });
+    setTimeout(() => resetCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     try {
       const r: any = await sendReset({ data: { email, redirectPath: "/reset-password" } });
       setResetInfo({ email, link: r?.link ?? null, emailSent: !!r?.emailSent, emailError: r?.emailError ?? null });
       if (r?.emailSent) toast.success(`E-mail enviado para ${email}`);
       else toast.warning("O e-mail não saiu — use o link abaixo para enviar manualmente.");
     } catch (e: any) {
+      setResetInfo({ email, link: null, emailSent: false, emailError: e?.message || "Falha ao gerar o link" });
       toast.error(e?.message || "Falha ao enviar");
     }
+    setTimeout(() => resetCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   }
 
 
@@ -117,7 +121,7 @@ function TenantsOverview() {
       </div>
 
       {resetInfo && (
-        <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
+        <div ref={resetCardRef} className="rounded-xl border-2 border-primary bg-card p-4 shadow-soft">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="font-bold">Link de recuperação · {resetInfo.email}</div>
