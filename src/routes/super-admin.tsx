@@ -93,15 +93,18 @@ function TenantsOverview() {
   async function resetPw(t: any) {
     const email = t.profiles?.email;
     if (!email) return toast.error("Esta dona não tem e-mail cadastrado");
-    if (!confirm(`Gerar link de redefinição de senha para ${email}?`)) return;
+    setResetInfo({ email, link: null, emailSent: false, emailError: "Gerando link..." });
+    setTimeout(() => resetCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     try {
       const r: any = await sendReset({ data: { email, redirectPath: "/reset-password" } });
       setResetInfo({ email, link: r?.link ?? null, emailSent: !!r?.emailSent, emailError: r?.emailError ?? null });
       if (r?.emailSent) toast.success(`E-mail enviado para ${email}`);
       else toast.warning("O e-mail não saiu — use o link abaixo para enviar manualmente.");
     } catch (e: any) {
+      setResetInfo({ email, link: null, emailSent: false, emailError: e?.message || "Falha ao gerar o link" });
       toast.error(e?.message || "Falha ao enviar");
     }
+    setTimeout(() => resetCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   }
 
 
