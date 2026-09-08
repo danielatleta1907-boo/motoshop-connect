@@ -121,7 +121,7 @@ function TenantsOverview() {
       </div>
 
       {resetInfo && (
-        <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
+        <div ref={resetCardRef} className="rounded-xl border-2 border-primary bg-card p-4 shadow-soft">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="font-bold">Link de recuperação · {resetInfo.email}</div>
